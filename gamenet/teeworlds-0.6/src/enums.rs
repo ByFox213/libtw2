@@ -1,3 +1,4 @@
+#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 use libtw2_packer::IntOutOfRange;
 
 pub const MAX_CLIENTS: i32 = 16;
@@ -8,10 +9,10 @@ pub const SPEC_FREEVIEW: i32 = -1;
 pub const FLAG_MISSING: i32 = -3;
 pub const FLAG_ATSTAND: i32 = -2;
 pub const FLAG_TAKEN: i32 = -1;
-pub const VERSION: &'static str = "0.6 626fce9a778df4d4";
-pub const CL_CALL_VOTE_TYPE_OPTION: &'static str = "option";
-pub const CL_CALL_VOTE_TYPE_KICK: &'static str = "kick";
-pub const CL_CALL_VOTE_TYPE_SPEC: &'static str = "spec";
+pub const VERSION: &str = "0.6 626fce9a778df4d4";
+pub const CL_CALL_VOTE_TYPE_OPTION: &str = "option";
+pub const CL_CALL_VOTE_TYPE_KICK: &str = "kick";
+pub const CL_CALL_VOTE_TYPE_SPEC: &str = "spec";
 
 pub const EMOTE_NORMAL: i32 = 0;
 pub const EMOTE_PAIN: i32 = 1;
@@ -203,7 +204,7 @@ pub enum Sound {
 
 impl Emote {
     pub fn from_i32(i: i32) -> Result<Emote, IntOutOfRange> {
-        use self::Emote::*;
+        use self::Emote::{Normal, Pain, Happy, Surprise, Angry, Blink};
         Ok(match i {
             EMOTE_NORMAL => Normal,
             EMOTE_PAIN => Pain,
@@ -214,8 +215,9 @@ impl Emote {
             _ => return Err(IntOutOfRange),
         })
     }
+    #[must_use]
     pub fn to_i32(self) -> i32 {
-        use self::Emote::*;
+        use self::Emote::{Normal, Pain, Happy, Surprise, Angry, Blink};
         match self {
             Normal => EMOTE_NORMAL,
             Pain => EMOTE_PAIN,
@@ -229,7 +231,7 @@ impl Emote {
 
 impl Powerup {
     pub fn from_i32(i: i32) -> Result<Powerup, IntOutOfRange> {
-        use self::Powerup::*;
+        use self::Powerup::{Health, Armor, Weapon, Ninja};
         Ok(match i {
             POWERUP_HEALTH => Health,
             POWERUP_ARMOR => Armor,
@@ -238,8 +240,9 @@ impl Powerup {
             _ => return Err(IntOutOfRange),
         })
     }
+    #[must_use]
     pub fn to_i32(self) -> i32 {
-        use self::Powerup::*;
+        use self::Powerup::{Health, Armor, Weapon, Ninja};
         match self {
             Health => POWERUP_HEALTH,
             Armor => POWERUP_ARMOR,
@@ -251,7 +254,7 @@ impl Powerup {
 
 impl Emoticon {
     pub fn from_i32(i: i32) -> Result<Emoticon, IntOutOfRange> {
-        use self::Emoticon::*;
+        use self::Emoticon::{Oop, Exclamation, Hearts, Drop, Dotdot, Music, Sorry, Ghost, Sushi, Splattee, Deviltee, Zomg, Zzz, Wtf, Eyes, Question};
         Ok(match i {
             EMOTICON_OOP => Oop,
             EMOTICON_EXCLAMATION => Exclamation,
@@ -272,8 +275,9 @@ impl Emoticon {
             _ => return Err(IntOutOfRange),
         })
     }
+    #[must_use]
     pub fn to_i32(self) -> i32 {
-        use self::Emoticon::*;
+        use self::Emoticon::{Oop, Exclamation, Hearts, Drop, Dotdot, Music, Sorry, Ghost, Sushi, Splattee, Deviltee, Zomg, Zzz, Wtf, Eyes, Question};
         match self {
             Oop => EMOTICON_OOP,
             Exclamation => EMOTICON_EXCLAMATION,
@@ -297,7 +301,7 @@ impl Emoticon {
 
 impl Weapon {
     pub fn from_i32(i: i32) -> Result<Weapon, IntOutOfRange> {
-        use self::Weapon::*;
+        use self::Weapon::{Hammer, Pistol, Shotgun, Grenade, Rifle, Ninja};
         Ok(match i {
             WEAPON_HAMMER => Hammer,
             WEAPON_PISTOL => Pistol,
@@ -308,8 +312,9 @@ impl Weapon {
             _ => return Err(IntOutOfRange),
         })
     }
+    #[must_use]
     pub fn to_i32(self) -> i32 {
-        use self::Weapon::*;
+        use self::Weapon::{Hammer, Pistol, Shotgun, Grenade, Rifle, Ninja};
         match self {
             Hammer => WEAPON_HAMMER,
             Pistol => WEAPON_PISTOL,
@@ -323,7 +328,7 @@ impl Weapon {
 
 impl Team {
     pub fn from_i32(i: i32) -> Result<Team, IntOutOfRange> {
-        use self::Team::*;
+        use self::Team::{Spectators, Red, Blue};
         Ok(match i {
             TEAM_SPECTATORS => Spectators,
             TEAM_RED => Red,
@@ -331,8 +336,9 @@ impl Team {
             _ => return Err(IntOutOfRange),
         })
     }
+    #[must_use]
     pub fn to_i32(self) -> i32 {
-        use self::Team::*;
+        use self::Team::{Spectators, Red, Blue};
         match self {
             Spectators => TEAM_SPECTATORS,
             Red => TEAM_RED,
@@ -343,7 +349,7 @@ impl Team {
 
 impl Sound {
     pub fn from_i32(i: i32) -> Result<Sound, IntOutOfRange> {
-        use self::Sound::*;
+        use self::Sound::{GunFire, ShotgunFire, GrenadeFire, HammerFire, HammerHit, NinjaFire, GrenadeExplode, NinjaHit, RifleFire, RifleBounce, WeaponSwitch, PlayerPainShort, PlayerPainLong, BodyLand, PlayerAirjump, PlayerJump, PlayerDie, PlayerSpawn, PlayerSkid, TeeCry, HookLoop, HookAttachGround, HookAttachPlayer, HookNoattach, PickupHealth, PickupArmor, PickupGrenade, PickupShotgun, PickupNinja, WeaponSpawn, WeaponNoammo, Hit, ChatServer, ChatClient, ChatHighlight, CtfDrop, CtfReturn, CtfGrabPl, CtfGrabEn, CtfCapture, Menu};
         Ok(match i {
             SOUND_GUN_FIRE => GunFire,
             SOUND_SHOTGUN_FIRE => ShotgunFire,
@@ -389,8 +395,9 @@ impl Sound {
             _ => return Err(IntOutOfRange),
         })
     }
+    #[must_use]
     pub fn to_i32(self) -> i32 {
-        use self::Sound::*;
+        use self::Sound::{GunFire, ShotgunFire, GrenadeFire, HammerFire, HammerHit, NinjaFire, GrenadeExplode, NinjaHit, RifleFire, RifleBounce, WeaponSwitch, PlayerPainShort, PlayerPainLong, BodyLand, PlayerAirjump, PlayerJump, PlayerDie, PlayerSpawn, PlayerSkid, TeeCry, HookLoop, HookAttachGround, HookAttachPlayer, HookNoattach, PickupHealth, PickupArmor, PickupGrenade, PickupShotgun, PickupNinja, WeaponSpawn, WeaponNoammo, Hit, ChatServer, ChatClient, ChatHighlight, CtfDrop, CtfReturn, CtfGrabPl, CtfGrabEn, CtfCapture, Menu};
         match self {
             GunFire => SOUND_GUN_FIRE,
             ShotgunFire => SOUND_SHOTGUN_FIRE,

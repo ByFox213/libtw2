@@ -14,7 +14,7 @@ pub struct BufferRefBuffer<'ref_, 'data: 'ref_, 'size: 'ref_> {
 impl<'r, 'd, 's> BufferRefBuffer<'r, 'd, 's> {
     fn new(buffer: &'r mut BufferRef<'d, 's>) -> BufferRefBuffer<'r, 'd, 's> {
         BufferRefBuffer {
-            buffer: buffer,
+            buffer,
             initialized: 0,
         }
     }

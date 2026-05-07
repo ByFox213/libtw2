@@ -1,5 +1,6 @@
 pub trait OptionExt {
     type Inner;
+    #[allow(clippy::wrong_self_convention)]
     fn is_none_or(self, f: impl FnOnce(Self::Inner) -> bool) -> bool;
 }
 

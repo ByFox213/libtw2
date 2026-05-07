@@ -14,7 +14,7 @@ pub struct VecBuffer<'data> {
 impl<'data> VecBuffer<'data> {
     fn new(vec: &'data mut Vec<u8>) -> VecBuffer<'data> {
         VecBuffer {
-            vec: vec,
+            vec,
             initialized: 0,
         }
     }

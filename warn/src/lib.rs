@@ -39,7 +39,7 @@ pub struct Panic;
 
 impl<W: Any + fmt::Debug + Send> Warn<W> for Panic {
     fn warn(&mut self, warning: W) {
-        panic!("{:?}", warning);
+        panic!("{warning:?}");
     }
 }
 
@@ -51,7 +51,7 @@ pub struct Log;
 
 impl<W: fmt::Debug> Warn<W> for Log {
     fn warn(&mut self, warning: W) {
-        warn!("{:?}", warning);
+        warn!("{warning:?}");
     }
 }
 
@@ -70,8 +70,8 @@ where
     F: FnMut(WF) -> WT,
 {
     RevMap {
-        warn: warn,
-        fn_: fn_,
+        warn,
+        fn_,
         phantom: PhantomData,
     }
 }
@@ -123,8 +123,8 @@ mod test {
     use super::Panic;
     use super::Warn;
 
-    const WARNING: &'static str = "unique_string";
-    const WARNING2: &'static str = "unique_no2";
+    const WARNING: &str = "unique_string";
+    const WARNING2: &str = "unique_no2";
 
     #[test]
     #[should_panic(expected = "unique_string")]
@@ -141,12 +141,12 @@ mod test {
     #[test]
     #[should_panic(expected = "unique_no2")]
     fn closure_panic() {
-        super::closure(&mut |_| panic!("{}", WARNING2)).warn(WARNING);
+        super::closure(&mut |_| panic!("{WARNING2}")).warn(WARNING);
     }
 
     #[test]
     fn closure_nopanic() {
-        super::closure(&mut |()| panic!("{}", WARNING2));
+        super::closure(&mut |()| panic!("{WARNING2}"));
     }
 
     #[test]

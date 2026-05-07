@@ -37,6 +37,9 @@ impl<'a> libtw2_gamenet_common::msg::Protocol<'a> for Protocol {
     }
 }
 
+/// # Errors
+///
+/// Returns [`Error`] if decoding fails.
 pub fn decode<'a, W>(warn: &mut W, p: &mut Unpacker<'a>)
     -> Result<SystemOrGame<System<'a>, Game<'a>>, Error>
     where W: Warn<Warning>
@@ -44,6 +47,9 @@ pub fn decode<'a, W>(warn: &mut W, p: &mut Unpacker<'a>)
     libtw2_gamenet_common::msg::decode(warn, Protocol, p)
 }
 
+/// # Errors
+///
+/// Returns [`Error`] if decoding fails.
 pub fn decode_msg<'a, W>(warn: &mut W, id: SystemOrGame<MessageId, MessageId>, p: &mut Unpacker<'a>)
     -> Result<SystemOrGame<System<'a>, Game<'a>>, Error>
     where W: Warn<Warning>

@@ -13,7 +13,7 @@ pub struct SliceRefBuffer<'data> {
 impl<'d> SliceRefBuffer<'d> {
     fn new(slice: &'d mut &'d mut [u8]) -> SliceRefBuffer<'d> {
         SliceRefBuffer {
-            slice: slice,
+            slice,
             initialized: 0,
         }
     }

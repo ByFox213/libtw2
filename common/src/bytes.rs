@@ -19,7 +19,7 @@ pub trait ByteArray {
 
 pub trait AsBytesExt: ByteArray + zerocopy::AsBytes {
     fn as_byte_array(&self) -> &Self::ByteArray {
-        TryFromByteSlice::try_from_byte_slice(self.as_bytes()).unwrap()
+        TryFromByteSlice::try_from_byte_slice(self.as_bytes()).unwrap_or_else(|_| unreachable!())
     }
 }
 
@@ -32,13 +32,13 @@ pub trait FromBytesExt: ByteArray + zerocopy::FromBytes {
             return None;
         }
         let (result, rest) = bytes.split_at(mem::size_of::<Self>());
-        Some((Self::ref_from(result).unwrap(), rest))
+        Some((Self::ref_from(result).unwrap_or_else(|| unreachable!())  , rest))
     }
     fn ref_from_array(bytes: &Self::ByteArray) -> &Self
     where
         Self: Sized,
     {
-        Self::ref_from(bytes.as_ref()).unwrap()
+        Self::ref_from(bytes.as_ref()).unwrap_or_else(|| unreachable!())
     }
     fn from_array(bytes: Self::ByteArray) -> Self
     where

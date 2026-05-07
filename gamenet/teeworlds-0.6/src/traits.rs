@@ -57,7 +57,7 @@ impl<'a> traits::Message<'a> for msg::Game<'a> {
     fn msg_id(&self) -> SystemOrGame<MessageId, MessageId> {
         SystemOrGame::Game(self.msg_id())
     }
-    fn encode_msg<'d, 's>(&self, p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    fn encode_msg<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         self.encode_msg(p)
     }
 }
@@ -77,7 +77,7 @@ impl<'a> traits::Message<'a> for msg::System<'a> {
     fn msg_id(&self) -> SystemOrGame<MessageId, MessageId> {
         SystemOrGame::System(self.msg_id())
     }
-    fn encode_msg<'d, 's>(&self, p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    fn encode_msg<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         self.encode_msg(p)
     }
 }

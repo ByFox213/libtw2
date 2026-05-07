@@ -1,3 +1,4 @@
+#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 use crate::error::Error;
 use libtw2_buffer::CapacityError;
 use libtw2_common::pretty;
@@ -17,12 +18,12 @@ use super::AddrPacked;
 use super::ClientsData;
 
 impl<'a> Connless<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<Connless<'a>, Error> {
-        let id = _p.read_raw(8)?;
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<Connless<'a>, Error> {
+        let id = p.read_raw(8)?;
         let connless_id = [id[0], id[1], id[2], id[3], id[4], id[5], id[6], id[7]];
-        Connless::decode_connless(warn, connless_id, _p)
+        Connless::decode_connless(warn, connless_id, p)
     }
-    pub fn encode<'d, 's>(&self, mut p: Packer<'d, 's>)
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>)
         -> Result<&'d [u8], CapacityError>
     {
         p.write_raw(&self.connless_id())?;
@@ -39,24 +40,24 @@ pub struct Client<'a> {
     pub is_player: i32,
 }
 
-impl<'a> Client<'a> {
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>)
+impl Client<'_> {
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>)
         -> Result<&'d [u8], CapacityError>
     {
-        _p.write_string(self.name)?;
-        _p.write_string(self.clan)?;
-        _p.write_string(&string_from_int(self.country))?;
-        _p.write_string(&string_from_int(self.score))?;
-        _p.write_string(&string_from_int(self.is_player))?;
-        Ok(_p.written())
+        p.write_string(self.name)?;
+        p.write_string(self.clan)?;
+        p.write_string(&string_from_int(self.country))?;
+        p.write_string(&string_from_int(self.score))?;
+        p.write_string(&string_from_int(self.is_player))?;
+        Ok(p.written())
     }
 }
 
-impl<'a> fmt::Debug for Client<'a> {
+impl fmt::Debug for Client<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Client")
-            .field("name", &pretty::Bytes::new(&self.name))
-            .field("clan", &pretty::Bytes::new(&self.clan))
+            .field("name", &pretty::Bytes::new(self.name))
+            .field("clan", &pretty::Bytes::new(self.clan))
             .field("country", &self.country)
             .field("score", &self.score)
             .field("is_player", &self.is_player)
@@ -66,17 +67,17 @@ impl<'a> fmt::Debug for Client<'a> {
 
 pub const INFO_FLAG_PASSWORD: i32 = 1;
 
-pub const REQUEST_LIST: &'static [u8; 8] = b"\xff\xff\xff\xffreq2";
-pub const LIST: &'static [u8; 8] = b"\xff\xff\xff\xfflis2";
-pub const REQUEST_COUNT: &'static [u8; 8] = b"\xff\xff\xff\xffcou2";
-pub const COUNT: &'static [u8; 8] = b"\xff\xff\xff\xffsiz2";
-pub const REQUEST_INFO: &'static [u8; 8] = b"\xff\xff\xff\xffgie3";
-pub const INFO: &'static [u8; 8] = b"\xff\xff\xff\xffinf3";
-pub const HEARTBEAT: &'static [u8; 8] = b"\xff\xff\xff\xffbea2";
-pub const FORWARD_CHECK: &'static [u8; 8] = b"\xff\xff\xff\xfffw??";
-pub const FORWARD_RESPONSE: &'static [u8; 8] = b"\xff\xff\xff\xfffw!!";
-pub const FORWARD_OK: &'static [u8; 8] = b"\xff\xff\xff\xfffwok";
-pub const FORWARD_ERROR: &'static [u8; 8] = b"\xff\xff\xff\xfffwer";
+pub const REQUEST_LIST: &[u8; 8] = b"\xff\xff\xff\xffreq2";
+pub const LIST: &[u8; 8] = b"\xff\xff\xff\xfflis2";
+pub const REQUEST_COUNT: &[u8; 8] = b"\xff\xff\xff\xffcou2";
+pub const COUNT: &[u8; 8] = b"\xff\xff\xff\xffsiz2";
+pub const REQUEST_INFO: &[u8; 8] = b"\xff\xff\xff\xffgie3";
+pub const INFO: &[u8; 8] = b"\xff\xff\xff\xffinf3";
+pub const HEARTBEAT: &[u8; 8] = b"\xff\xff\xff\xffbea2";
+pub const FORWARD_CHECK: &[u8; 8] = b"\xff\xff\xff\xfffw??";
+pub const FORWARD_RESPONSE: &[u8; 8] = b"\xff\xff\xff\xfffw!!";
+pub const FORWARD_OK: &[u8; 8] = b"\xff\xff\xff\xfffwok";
+pub const FORWARD_ERROR: &[u8; 8] = b"\xff\xff\xff\xfffwer";
 
 #[derive(Clone, Copy)]
 pub enum Connless<'a> {
@@ -94,22 +95,23 @@ pub enum Connless<'a> {
 }
 
 impl<'a> Connless<'a> {
-    pub fn decode_connless<W: Warn<Warning>>(warn: &mut W, connless_id: [u8; 8], _p: &mut Unpacker<'a>) -> Result<Connless<'a>, Error> {
+    pub fn decode_connless<W: Warn<Warning>>(warn: &mut W, connless_id: [u8; 8], p: &mut Unpacker<'a>) -> Result<Connless<'a>, Error> {
         Ok(match &connless_id {
-            REQUEST_LIST => Connless::RequestList(RequestList::decode(warn, _p)?),
-            LIST => Connless::List(List::decode(warn, _p)?),
-            REQUEST_COUNT => Connless::RequestCount(RequestCount::decode(warn, _p)?),
-            COUNT => Connless::Count(Count::decode(warn, _p)?),
-            REQUEST_INFO => Connless::RequestInfo(RequestInfo::decode(warn, _p)?),
-            INFO => Connless::Info(Info::decode(warn, _p)?),
-            HEARTBEAT => Connless::Heartbeat(Heartbeat::decode(warn, _p)?),
-            FORWARD_CHECK => Connless::ForwardCheck(ForwardCheck::decode(warn, _p)?),
-            FORWARD_RESPONSE => Connless::ForwardResponse(ForwardResponse::decode(warn, _p)?),
-            FORWARD_OK => Connless::ForwardOk(ForwardOk::decode(warn, _p)?),
-            FORWARD_ERROR => Connless::ForwardError(ForwardError::decode(warn, _p)?),
+            REQUEST_LIST => Connless::RequestList(RequestList::decode(warn, p)?),
+            LIST => Connless::List(List::decode(warn, p)?),
+            REQUEST_COUNT => Connless::RequestCount(RequestCount::decode(warn, p)?),
+            COUNT => Connless::Count(Count::decode(warn, p)?),
+            REQUEST_INFO => Connless::RequestInfo(RequestInfo::decode(warn, p)?),
+            INFO => Connless::Info(Info::decode(warn, p)?),
+            HEARTBEAT => Connless::Heartbeat(Heartbeat::decode(warn, p)?),
+            FORWARD_CHECK => Connless::ForwardCheck(ForwardCheck::decode(warn, p)?),
+            FORWARD_RESPONSE => Connless::ForwardResponse(ForwardResponse::decode(warn, p)?),
+            FORWARD_OK => Connless::ForwardOk(ForwardOk::decode(warn, p)?),
+            FORWARD_ERROR => Connless::ForwardError(ForwardError::decode(warn, p)?),
             _ => return Err(Error::UnknownId),
         })
     }
+    #[must_use]
     pub fn connless_id(&self) -> [u8; 8] {
         match *self {
             Connless::RequestList(_) => *REQUEST_LIST,
@@ -125,7 +127,7 @@ impl<'a> Connless<'a> {
             Connless::ForwardError(_) => *FORWARD_ERROR,
         }
     }
-    pub fn encode_connless<'d, 's>(&self, p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode_connless<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         match *self {
             Connless::RequestList(ref i) => i.encode(p),
             Connless::List(ref i) => i.encode(p),
@@ -142,7 +144,7 @@ impl<'a> Connless<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Connless<'a> {
+impl fmt::Debug for Connless<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Connless::RequestList(ref i) => i.fmt(f),
@@ -279,13 +281,13 @@ pub struct ForwardOk;
 pub struct ForwardError;
 
 impl RequestList {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<RequestList, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<RequestList, Error> {
         let result = Ok(RequestList);
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        Ok(_p.written())
+    pub fn encode<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        Ok(p.written())
     }
 }
 impl fmt::Debug for RequestList {
@@ -296,19 +298,19 @@ impl fmt::Debug for RequestList {
 }
 
 impl<'a> List<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<List<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<List<'a>, Error> {
         let result = Ok(List {
-            servers: AddrPackedSliceExt::from_bytes(wrap(warn), _p.read_rest()?),
+            servers: AddrPackedSliceExt::from_bytes(wrap(warn), p.read_rest()?),
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_rest(self.servers.as_bytes())?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_rest(self.servers.as_bytes())?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for List<'a> {
+impl fmt::Debug for List<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("List")
             .field("servers", &self.servers)
@@ -317,13 +319,13 @@ impl<'a> fmt::Debug for List<'a> {
 }
 
 impl RequestCount {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<RequestCount, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<RequestCount, Error> {
         let result = Ok(RequestCount);
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        Ok(_p.written())
+    pub fn encode<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        Ok(p.written())
     }
 }
 impl fmt::Debug for RequestCount {
@@ -334,16 +336,16 @@ impl fmt::Debug for RequestCount {
 }
 
 impl Count {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<Count, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<Count, Error> {
         let result = Ok(Count {
-            count: { let s = _p.read_raw(2)?; u16::from_be_bytes([s[0], s[1]]) },
+            count: { let s = p.read_raw(2)?; u16::from_be_bytes([s[0], s[1]]) },
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_raw(&self.count.to_be_bytes())?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_raw(&self.count.to_be_bytes())?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for Count {
@@ -355,16 +357,16 @@ impl fmt::Debug for Count {
 }
 
 impl RequestInfo {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<RequestInfo, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<RequestInfo, Error> {
         let result = Ok(RequestInfo {
-            token: _p.read_raw(1)?[0],
+            token: p.read_raw(1)?[0],
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_raw(&[self.token])?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_raw(&[self.token])?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for RequestInfo {
@@ -376,50 +378,50 @@ impl fmt::Debug for RequestInfo {
 }
 
 impl<'a> Info<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<Info<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<Info<'a>, Error> {
         let result = Ok(Info {
-            token: int_from_string(_p.read_string()?)?,
-            version: sanitize(warn, _p.read_string()?)?,
-            name: sanitize(warn, _p.read_string()?)?,
-            map: sanitize(warn, _p.read_string()?)?,
-            game_type: sanitize(warn, _p.read_string()?)?,
-            flags: int_from_string(_p.read_string()?)?,
-            num_players: int_from_string(_p.read_string()?)?,
-            max_players: int_from_string(_p.read_string()?)?,
-            num_clients: int_from_string(_p.read_string()?)?,
-            max_clients: int_from_string(_p.read_string()?)?,
-            clients: ClientsData::from_bytes(_p.read_rest()?),
+            token: int_from_string(p.read_string()?)?,
+            version: sanitize(warn, p.read_string()?)?,
+            name: sanitize(warn, p.read_string()?)?,
+            map: sanitize(warn, p.read_string()?)?,
+            game_type: sanitize(warn, p.read_string()?)?,
+            flags: int_from_string(p.read_string()?)?,
+            num_players: int_from_string(p.read_string()?)?,
+            max_players: int_from_string(p.read_string()?)?,
+            num_clients: int_from_string(p.read_string()?)?,
+            max_clients: int_from_string(p.read_string()?)?,
+            clients: ClientsData::from_bytes(p.read_rest()?),
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        sanitize(&mut Panic, self.version).unwrap();
-        sanitize(&mut Panic, self.name).unwrap();
-        sanitize(&mut Panic, self.map).unwrap();
-        sanitize(&mut Panic, self.game_type).unwrap();
-        _p.write_string(&string_from_int(self.token))?;
-        _p.write_string(self.version)?;
-        _p.write_string(self.name)?;
-        _p.write_string(self.map)?;
-        _p.write_string(self.game_type)?;
-        _p.write_string(&string_from_int(self.flags))?;
-        _p.write_string(&string_from_int(self.num_players))?;
-        _p.write_string(&string_from_int(self.max_players))?;
-        _p.write_string(&string_from_int(self.num_clients))?;
-        _p.write_string(&string_from_int(self.max_clients))?;
-        _p.write_rest(self.clients.as_bytes())?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        sanitize(&mut Panic, self.version).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.name).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.map).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.game_type).unwrap_or_else(|_| unreachable!());
+        p.write_string(&string_from_int(self.token))?;
+        p.write_string(self.version)?;
+        p.write_string(self.name)?;
+        p.write_string(self.map)?;
+        p.write_string(self.game_type)?;
+        p.write_string(&string_from_int(self.flags))?;
+        p.write_string(&string_from_int(self.num_players))?;
+        p.write_string(&string_from_int(self.max_players))?;
+        p.write_string(&string_from_int(self.num_clients))?;
+        p.write_string(&string_from_int(self.max_clients))?;
+        p.write_rest(self.clients.as_bytes())?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for Info<'a> {
+impl fmt::Debug for Info<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Info")
             .field("token", &self.token)
-            .field("version", &pretty::Bytes::new(&self.version))
-            .field("name", &pretty::Bytes::new(&self.name))
-            .field("map", &pretty::Bytes::new(&self.map))
-            .field("game_type", &pretty::Bytes::new(&self.game_type))
+            .field("version", &pretty::Bytes::new(self.version))
+            .field("name", &pretty::Bytes::new(self.name))
+            .field("map", &pretty::Bytes::new(self.map))
+            .field("game_type", &pretty::Bytes::new(self.game_type))
             .field("flags", &self.flags)
             .field("num_players", &self.num_players)
             .field("max_players", &self.max_players)
@@ -431,16 +433,16 @@ impl<'a> fmt::Debug for Info<'a> {
 }
 
 impl Heartbeat {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<Heartbeat, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<Heartbeat, Error> {
         let result = Ok(Heartbeat {
-            alt_port: { let s = _p.read_raw(2)?; u16::from_be_bytes([s[0], s[1]]) },
+            alt_port: { let s = p.read_raw(2)?; u16::from_be_bytes([s[0], s[1]]) },
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_raw(&self.alt_port.to_be_bytes())?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_raw(&self.alt_port.to_be_bytes())?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for Heartbeat {
@@ -452,13 +454,13 @@ impl fmt::Debug for Heartbeat {
 }
 
 impl ForwardCheck {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<ForwardCheck, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<ForwardCheck, Error> {
         let result = Ok(ForwardCheck);
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        Ok(_p.written())
+    pub fn encode<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        Ok(p.written())
     }
 }
 impl fmt::Debug for ForwardCheck {
@@ -469,13 +471,13 @@ impl fmt::Debug for ForwardCheck {
 }
 
 impl ForwardResponse {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<ForwardResponse, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<ForwardResponse, Error> {
         let result = Ok(ForwardResponse);
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        Ok(_p.written())
+    pub fn encode<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        Ok(p.written())
     }
 }
 impl fmt::Debug for ForwardResponse {
@@ -486,13 +488,13 @@ impl fmt::Debug for ForwardResponse {
 }
 
 impl ForwardOk {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<ForwardOk, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<ForwardOk, Error> {
         let result = Ok(ForwardOk);
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        Ok(_p.written())
+    pub fn encode<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        Ok(p.written())
     }
 }
 impl fmt::Debug for ForwardOk {
@@ -503,13 +505,13 @@ impl fmt::Debug for ForwardOk {
 }
 
 impl ForwardError {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<ForwardError, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<ForwardError, Error> {
         let result = Ok(ForwardError);
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        Ok(_p.written())
+    pub fn encode<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        Ok(p.written())
     }
 }
 impl fmt::Debug for ForwardError {

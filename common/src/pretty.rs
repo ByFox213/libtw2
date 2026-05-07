@@ -50,7 +50,7 @@ impl Byte {
         } else {
             string.extend(ascii::escape_default(byte));
         }
-        Byte { string: string }
+        Byte { string }
     }
 }
 

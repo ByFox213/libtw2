@@ -38,6 +38,8 @@ mod traits;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CapacityError;
 
+/// # Safety
+/// The caller must ensure that the lifetimes are valid.
 unsafe fn wildly_unsafe<'a, 'b>(slice: &'a mut [u8]) -> &'b mut [u8] {
     slice::from_raw_parts_mut(slice.as_mut_ptr(), slice.len())
 }
@@ -59,13 +61,18 @@ impl<'d, 's> BufferRef<'d, 's> {
     pub fn new(buffer: &'d mut [u8], initialized: &'s mut usize) -> BufferRef<'d, 's> {
         debug_assert!(*initialized == 0);
         BufferRef {
-            buffer: buffer,
+            buffer,
             initialized_: initialized,
         }
     }
 
     /// Advances the split of initialized/uninitialized data by `num_bytes` to
     /// the right.
+    /// # Safety
+    /// The caller must ensure the buffer is not accessed concurrently.
+    ///
+    /// # Panics
+    /// Panics if initialized + num_bytes > buffer length.
     pub unsafe fn advance(&mut self, num_bytes: usize) {
         assert!(*self.initialized_ + num_bytes <= self.buffer.len());
         *self.initialized_ += num_bytes;
@@ -73,13 +80,16 @@ impl<'d, 's> BufferRef<'d, 's> {
 
     /// Writes the bytes yielded by the `bytes` iterator into the buffer.
     ///
+    ///
+    /// # Errors
+    /// Returns CapacityError if the iterator yields more bytes than the buffer can contain.
     /// If the iterator yields more bytes than the buffer can contain, a
     /// `CapacityError` is returned.
     pub fn extend<I>(&mut self, bytes: I) -> Result<(), CapacityError>
     where
         I: Iterator<Item = u8>,
     {
-        let mut buf_iter = (&mut self.buffer[*self.initialized_..]).into_iter();
+        let mut buf_iter = (&mut self.buffer[*self.initialized_..]).iter_mut();
         for b in bytes {
             *unwrap_or_return!(buf_iter.next(), Err(CapacityError)) = b;
             *self.initialized_ += 1;
@@ -92,10 +102,12 @@ impl<'d, 's> BufferRef<'d, 's> {
     /// If the slice contains more bytes than the buffer can contain, a
     /// `CapacityError` is returned.
     pub fn write(&mut self, bytes: &[u8]) -> Result<(), CapacityError> {
-        self.extend(bytes.iter().cloned())
+        self.extend(bytes.iter().copied())
     }
 
     /// Returns the uninitialized part of the buffer.
+    /// # Safety
+    /// The caller must ensure the buffer is not accessed concurrently.
     pub unsafe fn uninitialized_mut(&mut self) -> &mut [u8] {
         &mut self.buffer[*self.initialized_..]
     }

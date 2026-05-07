@@ -18,7 +18,7 @@ pub struct ArrayVecBuffer<'data, A: 'data + Array<Item = u8>> {
 impl<'d, A: Array<Item = u8>> ArrayVecBuffer<'d, A> {
     fn new(vec: &'d mut ArrayVec<A>) -> ArrayVecBuffer<'d, A> {
         ArrayVecBuffer {
-            vec: vec,
+            vec,
             initialized: 0,
         }
     }

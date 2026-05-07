@@ -9,9 +9,9 @@ pub struct MapIterator<T, D, I: Iterator> {
 impl<T, D, I: Iterator> MapIterator<T, D, I> {
     pub fn new(data: D, iterator: I, map_fn: fn(I::Item, &mut D) -> T) -> MapIterator<T, D, I> {
         MapIterator {
-            data: data,
-            iterator: iterator,
-            map_fn: map_fn,
+            data,
+            iterator,
+            map_fn,
         }
     }
 }

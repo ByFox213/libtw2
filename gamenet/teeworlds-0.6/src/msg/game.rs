@@ -1,3 +1,4 @@
+#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc)]
 use crate::enums;
 use crate::error::Error;
 use libtw2_buffer::CapacityError;
@@ -29,7 +30,7 @@ impl<'a> Game<'a> {
             Err(Error::UnknownId)
         }
     }
-    pub fn encode<'d, 's>(&self, mut p: Packer<'d, 's>)
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>)
         -> Result<&'d [u8], CapacityError>
     {
         with_packer(&mut p, |p| SystemOrGame::Game(self.msg_id()).encode_id(p))?;
@@ -94,37 +95,38 @@ pub enum Game<'a> {
 }
 
 impl<'a> Game<'a> {
-    pub fn decode_msg<W: Warn<Warning>>(warn: &mut W, msg_id: MessageId, _p: &mut Unpacker<'a>) -> Result<Game<'a>, Error> {
-        use self::MessageId::*;
+    pub fn decode_msg<W: Warn<Warning>>(warn: &mut W, msg_id: MessageId, p: &mut Unpacker<'a>) -> Result<Game<'a>, Error> {
+        use self::MessageId::Ordinal;
         Ok(match msg_id {
-            Ordinal(SV_MOTD) => Game::SvMotd(SvMotd::decode(warn, _p)?),
-            Ordinal(SV_BROADCAST) => Game::SvBroadcast(SvBroadcast::decode(warn, _p)?),
-            Ordinal(SV_CHAT) => Game::SvChat(SvChat::decode(warn, _p)?),
-            Ordinal(SV_KILL_MSG) => Game::SvKillMsg(SvKillMsg::decode(warn, _p)?),
-            Ordinal(SV_SOUND_GLOBAL) => Game::SvSoundGlobal(SvSoundGlobal::decode(warn, _p)?),
-            Ordinal(SV_TUNE_PARAMS) => Game::SvTuneParams(SvTuneParams::decode(warn, _p)?),
-            Ordinal(SV_EXTRA_PROJECTILE) => Game::SvExtraProjectile(SvExtraProjectile::decode(warn, _p)?),
-            Ordinal(SV_READY_TO_ENTER) => Game::SvReadyToEnter(SvReadyToEnter::decode(warn, _p)?),
-            Ordinal(SV_WEAPON_PICKUP) => Game::SvWeaponPickup(SvWeaponPickup::decode(warn, _p)?),
-            Ordinal(SV_EMOTICON) => Game::SvEmoticon(SvEmoticon::decode(warn, _p)?),
-            Ordinal(SV_VOTE_CLEAR_OPTIONS) => Game::SvVoteClearOptions(SvVoteClearOptions::decode(warn, _p)?),
-            Ordinal(SV_VOTE_OPTION_LIST_ADD) => Game::SvVoteOptionListAdd(SvVoteOptionListAdd::decode(warn, _p)?),
-            Ordinal(SV_VOTE_OPTION_ADD) => Game::SvVoteOptionAdd(SvVoteOptionAdd::decode(warn, _p)?),
-            Ordinal(SV_VOTE_OPTION_REMOVE) => Game::SvVoteOptionRemove(SvVoteOptionRemove::decode(warn, _p)?),
-            Ordinal(SV_VOTE_SET) => Game::SvVoteSet(SvVoteSet::decode(warn, _p)?),
-            Ordinal(SV_VOTE_STATUS) => Game::SvVoteStatus(SvVoteStatus::decode(warn, _p)?),
-            Ordinal(CL_SAY) => Game::ClSay(ClSay::decode(warn, _p)?),
-            Ordinal(CL_SET_TEAM) => Game::ClSetTeam(ClSetTeam::decode(warn, _p)?),
-            Ordinal(CL_SET_SPECTATOR_MODE) => Game::ClSetSpectatorMode(ClSetSpectatorMode::decode(warn, _p)?),
-            Ordinal(CL_START_INFO) => Game::ClStartInfo(ClStartInfo::decode(warn, _p)?),
-            Ordinal(CL_CHANGE_INFO) => Game::ClChangeInfo(ClChangeInfo::decode(warn, _p)?),
-            Ordinal(CL_KILL) => Game::ClKill(ClKill::decode(warn, _p)?),
-            Ordinal(CL_EMOTICON) => Game::ClEmoticon(ClEmoticon::decode(warn, _p)?),
-            Ordinal(CL_VOTE) => Game::ClVote(ClVote::decode(warn, _p)?),
-            Ordinal(CL_CALL_VOTE) => Game::ClCallVote(ClCallVote::decode(warn, _p)?),
+            Ordinal(SV_MOTD) => Game::SvMotd(SvMotd::decode(warn, p)?),
+            Ordinal(SV_BROADCAST) => Game::SvBroadcast(SvBroadcast::decode(warn, p)?),
+            Ordinal(SV_CHAT) => Game::SvChat(SvChat::decode(warn, p)?),
+            Ordinal(SV_KILL_MSG) => Game::SvKillMsg(SvKillMsg::decode(warn, p)?),
+            Ordinal(SV_SOUND_GLOBAL) => Game::SvSoundGlobal(SvSoundGlobal::decode(warn, p)?),
+            Ordinal(SV_TUNE_PARAMS) => Game::SvTuneParams(SvTuneParams::decode(warn, p)?),
+            Ordinal(SV_EXTRA_PROJECTILE) => Game::SvExtraProjectile(SvExtraProjectile::decode(warn, p)?),
+            Ordinal(SV_READY_TO_ENTER) => Game::SvReadyToEnter(SvReadyToEnter::decode(warn, p)?),
+            Ordinal(SV_WEAPON_PICKUP) => Game::SvWeaponPickup(SvWeaponPickup::decode(warn, p)?),
+            Ordinal(SV_EMOTICON) => Game::SvEmoticon(SvEmoticon::decode(warn, p)?),
+            Ordinal(SV_VOTE_CLEAR_OPTIONS) => Game::SvVoteClearOptions(SvVoteClearOptions::decode(warn, p)?),
+            Ordinal(SV_VOTE_OPTION_LIST_ADD) => Game::SvVoteOptionListAdd(SvVoteOptionListAdd::decode(warn, p)?),
+            Ordinal(SV_VOTE_OPTION_ADD) => Game::SvVoteOptionAdd(SvVoteOptionAdd::decode(warn, p)?),
+            Ordinal(SV_VOTE_OPTION_REMOVE) => Game::SvVoteOptionRemove(SvVoteOptionRemove::decode(warn, p)?),
+            Ordinal(SV_VOTE_SET) => Game::SvVoteSet(SvVoteSet::decode(warn, p)?),
+            Ordinal(SV_VOTE_STATUS) => Game::SvVoteStatus(SvVoteStatus::decode(warn, p)?),
+            Ordinal(CL_SAY) => Game::ClSay(ClSay::decode(warn, p)?),
+            Ordinal(CL_SET_TEAM) => Game::ClSetTeam(ClSetTeam::decode(warn, p)?),
+            Ordinal(CL_SET_SPECTATOR_MODE) => Game::ClSetSpectatorMode(ClSetSpectatorMode::decode(warn, p)?),
+            Ordinal(CL_START_INFO) => Game::ClStartInfo(ClStartInfo::decode(warn, p)?),
+            Ordinal(CL_CHANGE_INFO) => Game::ClChangeInfo(ClChangeInfo::decode(warn, p)?),
+            Ordinal(CL_KILL) => Game::ClKill(ClKill::decode(warn, p)?),
+            Ordinal(CL_EMOTICON) => Game::ClEmoticon(ClEmoticon::decode(warn, p)?),
+            Ordinal(CL_VOTE) => Game::ClVote(ClVote::decode(warn, p)?),
+            Ordinal(CL_CALL_VOTE) => Game::ClCallVote(ClCallVote::decode(warn, p)?),
             _ => return Err(Error::UnknownId),
         })
     }
+    #[must_use]
     pub fn msg_id(&self) -> MessageId {
         match *self {
             Game::SvMotd(_) => MessageId::from(SV_MOTD),
@@ -154,7 +156,7 @@ impl<'a> Game<'a> {
             Game::ClCallVote(_) => MessageId::from(CL_CALL_VOTE),
         }
     }
-    pub fn encode_msg<'d, 's>(&self, p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode_msg<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         match *self {
             Game::SvMotd(ref i) => i.encode(p),
             Game::SvBroadcast(ref i) => i.encode(p),
@@ -185,7 +187,7 @@ impl<'a> Game<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Game<'a> {
+impl fmt::Debug for Game<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Game::SvMotd(ref i) => i.fmt(f),
@@ -545,96 +547,96 @@ pub struct ClCallVote<'a> {
 }
 
 impl<'a> SvMotd<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<SvMotd<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<SvMotd<'a>, Error> {
         let result = Ok(SvMotd {
-            message: _p.read_string()?,
+            message: p.read_string()?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_string(self.message)?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_string(self.message)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for SvMotd<'a> {
+impl fmt::Debug for SvMotd<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("SvMotd")
-            .field("message", &pretty::Bytes::new(&self.message))
+            .field("message", &pretty::Bytes::new(self.message))
             .finish()
     }
 }
 
 impl<'a> SvBroadcast<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<SvBroadcast<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<SvBroadcast<'a>, Error> {
         let result = Ok(SvBroadcast {
-            message: _p.read_string()?,
+            message: p.read_string()?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_string(self.message)?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_string(self.message)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for SvBroadcast<'a> {
+impl fmt::Debug for SvBroadcast<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("SvBroadcast")
-            .field("message", &pretty::Bytes::new(&self.message))
+            .field("message", &pretty::Bytes::new(self.message))
             .finish()
     }
 }
 
 impl<'a> SvChat<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<SvChat<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<SvChat<'a>, Error> {
         let result = Ok(SvChat {
-            team: to_bool(_p.read_int(warn)?)?,
-            client_id: in_range(_p.read_int(warn)?, -1, 15)?,
-            message: sanitize(warn, _p.read_string()?)?,
+            team: to_bool(p.read_int(warn)?)?,
+            client_id: in_range(p.read_int(warn)?, -1, 15)?,
+            message: sanitize(warn, p.read_string()?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         assert!(-1 <= self.client_id && self.client_id <= 15);
-        sanitize(&mut Panic, self.message).unwrap();
-        _p.write_int(self.team as i32)?;
-        _p.write_int(self.client_id)?;
-        _p.write_string(self.message)?;
-        Ok(_p.written())
+        sanitize(&mut Panic, self.message).unwrap_or_else(|_| unreachable!());
+        p.write_int(i32::from(self.team))?;
+        p.write_int(self.client_id)?;
+        p.write_string(self.message)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for SvChat<'a> {
+impl fmt::Debug for SvChat<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("SvChat")
             .field("team", &self.team)
             .field("client_id", &self.client_id)
-            .field("message", &pretty::Bytes::new(&self.message))
+            .field("message", &pretty::Bytes::new(self.message))
             .finish()
     }
 }
 
 impl SvKillMsg {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<SvKillMsg, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<SvKillMsg, Error> {
         let result = Ok(SvKillMsg {
-            killer: in_range(_p.read_int(warn)?, 0, 15)?,
-            victim: in_range(_p.read_int(warn)?, 0, 15)?,
-            weapon: in_range(_p.read_int(warn)?, -3, 5)?,
-            mode_special: _p.read_int(warn)?,
+            killer: in_range(p.read_int(warn)?, 0, 15)?,
+            victim: in_range(p.read_int(warn)?, 0, 15)?,
+            weapon: in_range(p.read_int(warn)?, -3, 5)?,
+            mode_special: p.read_int(warn)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         assert!(0 <= self.killer && self.killer <= 15);
         assert!(0 <= self.victim && self.victim <= 15);
         assert!(-3 <= self.weapon && self.weapon <= 5);
-        _p.write_int(self.killer)?;
-        _p.write_int(self.victim)?;
-        _p.write_int(self.weapon)?;
-        _p.write_int(self.mode_special)?;
-        Ok(_p.written())
+        p.write_int(self.killer)?;
+        p.write_int(self.victim)?;
+        p.write_int(self.weapon)?;
+        p.write_int(self.mode_special)?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for SvKillMsg {
@@ -649,16 +651,16 @@ impl fmt::Debug for SvKillMsg {
 }
 
 impl SvSoundGlobal {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<SvSoundGlobal, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<SvSoundGlobal, Error> {
         let result = Ok(SvSoundGlobal {
-            sound_id: enums::Sound::from_i32(_p.read_int(warn)?)?,
+            sound_id: enums::Sound::from_i32(p.read_int(warn)?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_int(self.sound_id.to_i32())?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_int(self.sound_id.to_i32())?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for SvSoundGlobal {
@@ -670,80 +672,80 @@ impl fmt::Debug for SvSoundGlobal {
 }
 
 impl SvTuneParams {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<SvTuneParams, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<SvTuneParams, Error> {
         let result = Ok(SvTuneParams {
-            ground_control_speed: TuneParam(_p.read_int(warn)?),
-            ground_control_accel: TuneParam(_p.read_int(warn)?),
-            ground_friction: TuneParam(_p.read_int(warn)?),
-            ground_jump_impulse: TuneParam(_p.read_int(warn)?),
-            air_jump_impulse: TuneParam(_p.read_int(warn)?),
-            air_control_speed: TuneParam(_p.read_int(warn)?),
-            air_control_accel: TuneParam(_p.read_int(warn)?),
-            air_friction: TuneParam(_p.read_int(warn)?),
-            hook_length: TuneParam(_p.read_int(warn)?),
-            hook_fire_speed: TuneParam(_p.read_int(warn)?),
-            hook_drag_accel: TuneParam(_p.read_int(warn)?),
-            hook_drag_speed: TuneParam(_p.read_int(warn)?),
-            gravity: TuneParam(_p.read_int(warn)?),
-            velramp_start: TuneParam(_p.read_int(warn)?),
-            velramp_range: TuneParam(_p.read_int(warn)?),
-            velramp_curvature: TuneParam(_p.read_int(warn)?),
-            gun_curvature: TuneParam(_p.read_int(warn)?),
-            gun_speed: TuneParam(_p.read_int(warn)?),
-            gun_lifetime: TuneParam(_p.read_int(warn)?),
-            shotgun_curvature: TuneParam(_p.read_int(warn)?),
-            shotgun_speed: TuneParam(_p.read_int(warn)?),
-            shotgun_speeddiff: TuneParam(_p.read_int(warn)?),
-            shotgun_lifetime: TuneParam(_p.read_int(warn)?),
-            grenade_curvature: TuneParam(_p.read_int(warn)?),
-            grenade_speed: TuneParam(_p.read_int(warn)?),
-            grenade_lifetime: TuneParam(_p.read_int(warn)?),
-            laser_reach: TuneParam(_p.read_int(warn)?),
-            laser_bounce_delay: TuneParam(_p.read_int(warn)?),
-            laser_bounce_num: TuneParam(_p.read_int(warn)?),
-            laser_bounce_cost: TuneParam(_p.read_int(warn)?),
-            laser_damage: TuneParam(_p.read_int(warn)?),
-            player_collision: TuneParam(_p.read_int(warn)?),
-            player_hooking: TuneParam(_p.read_int(warn)?),
+            ground_control_speed: TuneParam(p.read_int(warn)?),
+            ground_control_accel: TuneParam(p.read_int(warn)?),
+            ground_friction: TuneParam(p.read_int(warn)?),
+            ground_jump_impulse: TuneParam(p.read_int(warn)?),
+            air_jump_impulse: TuneParam(p.read_int(warn)?),
+            air_control_speed: TuneParam(p.read_int(warn)?),
+            air_control_accel: TuneParam(p.read_int(warn)?),
+            air_friction: TuneParam(p.read_int(warn)?),
+            hook_length: TuneParam(p.read_int(warn)?),
+            hook_fire_speed: TuneParam(p.read_int(warn)?),
+            hook_drag_accel: TuneParam(p.read_int(warn)?),
+            hook_drag_speed: TuneParam(p.read_int(warn)?),
+            gravity: TuneParam(p.read_int(warn)?),
+            velramp_start: TuneParam(p.read_int(warn)?),
+            velramp_range: TuneParam(p.read_int(warn)?),
+            velramp_curvature: TuneParam(p.read_int(warn)?),
+            gun_curvature: TuneParam(p.read_int(warn)?),
+            gun_speed: TuneParam(p.read_int(warn)?),
+            gun_lifetime: TuneParam(p.read_int(warn)?),
+            shotgun_curvature: TuneParam(p.read_int(warn)?),
+            shotgun_speed: TuneParam(p.read_int(warn)?),
+            shotgun_speeddiff: TuneParam(p.read_int(warn)?),
+            shotgun_lifetime: TuneParam(p.read_int(warn)?),
+            grenade_curvature: TuneParam(p.read_int(warn)?),
+            grenade_speed: TuneParam(p.read_int(warn)?),
+            grenade_lifetime: TuneParam(p.read_int(warn)?),
+            laser_reach: TuneParam(p.read_int(warn)?),
+            laser_bounce_delay: TuneParam(p.read_int(warn)?),
+            laser_bounce_num: TuneParam(p.read_int(warn)?),
+            laser_bounce_cost: TuneParam(p.read_int(warn)?),
+            laser_damage: TuneParam(p.read_int(warn)?),
+            player_collision: TuneParam(p.read_int(warn)?),
+            player_hooking: TuneParam(p.read_int(warn)?),
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_int(self.ground_control_speed.0)?;
-        _p.write_int(self.ground_control_accel.0)?;
-        _p.write_int(self.ground_friction.0)?;
-        _p.write_int(self.ground_jump_impulse.0)?;
-        _p.write_int(self.air_jump_impulse.0)?;
-        _p.write_int(self.air_control_speed.0)?;
-        _p.write_int(self.air_control_accel.0)?;
-        _p.write_int(self.air_friction.0)?;
-        _p.write_int(self.hook_length.0)?;
-        _p.write_int(self.hook_fire_speed.0)?;
-        _p.write_int(self.hook_drag_accel.0)?;
-        _p.write_int(self.hook_drag_speed.0)?;
-        _p.write_int(self.gravity.0)?;
-        _p.write_int(self.velramp_start.0)?;
-        _p.write_int(self.velramp_range.0)?;
-        _p.write_int(self.velramp_curvature.0)?;
-        _p.write_int(self.gun_curvature.0)?;
-        _p.write_int(self.gun_speed.0)?;
-        _p.write_int(self.gun_lifetime.0)?;
-        _p.write_int(self.shotgun_curvature.0)?;
-        _p.write_int(self.shotgun_speed.0)?;
-        _p.write_int(self.shotgun_speeddiff.0)?;
-        _p.write_int(self.shotgun_lifetime.0)?;
-        _p.write_int(self.grenade_curvature.0)?;
-        _p.write_int(self.grenade_speed.0)?;
-        _p.write_int(self.grenade_lifetime.0)?;
-        _p.write_int(self.laser_reach.0)?;
-        _p.write_int(self.laser_bounce_delay.0)?;
-        _p.write_int(self.laser_bounce_num.0)?;
-        _p.write_int(self.laser_bounce_cost.0)?;
-        _p.write_int(self.laser_damage.0)?;
-        _p.write_int(self.player_collision.0)?;
-        _p.write_int(self.player_hooking.0)?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_int(self.ground_control_speed.0)?;
+        p.write_int(self.ground_control_accel.0)?;
+        p.write_int(self.ground_friction.0)?;
+        p.write_int(self.ground_jump_impulse.0)?;
+        p.write_int(self.air_jump_impulse.0)?;
+        p.write_int(self.air_control_speed.0)?;
+        p.write_int(self.air_control_accel.0)?;
+        p.write_int(self.air_friction.0)?;
+        p.write_int(self.hook_length.0)?;
+        p.write_int(self.hook_fire_speed.0)?;
+        p.write_int(self.hook_drag_accel.0)?;
+        p.write_int(self.hook_drag_speed.0)?;
+        p.write_int(self.gravity.0)?;
+        p.write_int(self.velramp_start.0)?;
+        p.write_int(self.velramp_range.0)?;
+        p.write_int(self.velramp_curvature.0)?;
+        p.write_int(self.gun_curvature.0)?;
+        p.write_int(self.gun_speed.0)?;
+        p.write_int(self.gun_lifetime.0)?;
+        p.write_int(self.shotgun_curvature.0)?;
+        p.write_int(self.shotgun_speed.0)?;
+        p.write_int(self.shotgun_speeddiff.0)?;
+        p.write_int(self.shotgun_lifetime.0)?;
+        p.write_int(self.grenade_curvature.0)?;
+        p.write_int(self.grenade_speed.0)?;
+        p.write_int(self.grenade_lifetime.0)?;
+        p.write_int(self.laser_reach.0)?;
+        p.write_int(self.laser_bounce_delay.0)?;
+        p.write_int(self.laser_bounce_num.0)?;
+        p.write_int(self.laser_bounce_cost.0)?;
+        p.write_int(self.laser_damage.0)?;
+        p.write_int(self.player_collision.0)?;
+        p.write_int(self.player_hooking.0)?;
+        Ok(p.written())
     }
 }
 pub const SV_TUNE_PARAMS_DEFAULT: SvTuneParams = SvTuneParams {
@@ -761,17 +763,17 @@ pub const SV_TUNE_PARAMS_DEFAULT: SvTuneParams = SvTuneParams {
     hook_drag_speed: TuneParam(1500),
     gravity: TuneParam(50),
     velramp_start: TuneParam(55000),
-    velramp_range: TuneParam(200000),
+    velramp_range: TuneParam(200_000),
     velramp_curvature: TuneParam(140),
     gun_curvature: TuneParam(125),
-    gun_speed: TuneParam(220000),
+    gun_speed: TuneParam(220_000),
     gun_lifetime: TuneParam(200),
     shotgun_curvature: TuneParam(125),
-    shotgun_speed: TuneParam(275000),
+    shotgun_speed: TuneParam(275_000),
     shotgun_speeddiff: TuneParam(80),
     shotgun_lifetime: TuneParam(20),
     grenade_curvature: TuneParam(700),
-    grenade_speed: TuneParam(100000),
+    grenade_speed: TuneParam(100_000),
     grenade_lifetime: TuneParam(200),
     laser_reach: TuneParam(80000),
     laser_bounce_delay: TuneParam(15000),
@@ -823,16 +825,16 @@ impl fmt::Debug for SvTuneParams {
 }
 
 impl SvExtraProjectile {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<SvExtraProjectile, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<SvExtraProjectile, Error> {
         let result = Ok(SvExtraProjectile {
-            projectile: crate::snap_obj::Projectile::decode_msg(warn, _p)?,
+            projectile: crate::snap_obj::Projectile::decode_msg(warn, p)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        with_packer(&mut _p, |p| self.projectile.encode_msg(p))?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        with_packer(&mut p, |p| self.projectile.encode_msg(p))?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for SvExtraProjectile {
@@ -844,13 +846,13 @@ impl fmt::Debug for SvExtraProjectile {
 }
 
 impl SvReadyToEnter {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<SvReadyToEnter, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<SvReadyToEnter, Error> {
         let result = Ok(SvReadyToEnter);
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        Ok(_p.written())
+    pub fn encode<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        Ok(p.written())
     }
 }
 impl fmt::Debug for SvReadyToEnter {
@@ -861,16 +863,16 @@ impl fmt::Debug for SvReadyToEnter {
 }
 
 impl SvWeaponPickup {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<SvWeaponPickup, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<SvWeaponPickup, Error> {
         let result = Ok(SvWeaponPickup {
-            weapon: enums::Weapon::from_i32(_p.read_int(warn)?)?,
+            weapon: enums::Weapon::from_i32(p.read_int(warn)?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_int(self.weapon.to_i32())?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_int(self.weapon.to_i32())?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for SvWeaponPickup {
@@ -882,19 +884,19 @@ impl fmt::Debug for SvWeaponPickup {
 }
 
 impl SvEmoticon {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<SvEmoticon, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<SvEmoticon, Error> {
         let result = Ok(SvEmoticon {
-            client_id: in_range(_p.read_int(warn)?, 0, 15)?,
-            emoticon: enums::Emoticon::from_i32(_p.read_int(warn)?)?,
+            client_id: in_range(p.read_int(warn)?, 0, 15)?,
+            emoticon: enums::Emoticon::from_i32(p.read_int(warn)?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         assert!(0 <= self.client_id && self.client_id <= 15);
-        _p.write_int(self.client_id)?;
-        _p.write_int(self.emoticon.to_i32())?;
-        Ok(_p.written())
+        p.write_int(self.client_id)?;
+        p.write_int(self.emoticon.to_i32())?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for SvEmoticon {
@@ -907,13 +909,13 @@ impl fmt::Debug for SvEmoticon {
 }
 
 impl SvVoteClearOptions {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<SvVoteClearOptions, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<SvVoteClearOptions, Error> {
         let result = Ok(SvVoteClearOptions);
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        Ok(_p.written())
+    pub fn encode<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        Ok(p.written())
     }
 }
 impl fmt::Debug for SvVoteClearOptions {
@@ -924,146 +926,146 @@ impl fmt::Debug for SvVoteClearOptions {
 }
 
 impl<'a> SvVoteOptionListAdd<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<SvVoteOptionListAdd<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<SvVoteOptionListAdd<'a>, Error> {
         let result = Ok(SvVoteOptionListAdd {
-            num_options: in_range(_p.read_int(warn)?, 1, 15)?,
+            num_options: in_range(p.read_int(warn)?, 1, 15)?,
             description: [
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
-                sanitize(warn, _p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
+                sanitize(warn, p.read_string()?)?,
             ],
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         assert!(1 <= self.num_options && self.num_options <= 15);
         for &e in &self.description {
-            sanitize(&mut Panic, e).unwrap();
+            sanitize(&mut Panic, e).unwrap_or_else(|_| unreachable!());
         }
-        _p.write_int(self.num_options)?;
+        p.write_int(self.num_options)?;
         for &e in &self.description {
-            _p.write_string(e)?;
+            p.write_string(e)?;
         }
-        Ok(_p.written())
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for SvVoteOptionListAdd<'a> {
+impl fmt::Debug for SvVoteOptionListAdd<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("SvVoteOptionListAdd")
             .field("num_options", &self.num_options)
-            .field("description", &DebugSlice::new(&self.description, |e| pretty::Bytes::new(&e)))
+            .field("description", &DebugSlice::new(&self.description, pretty::Bytes::new))
             .finish()
     }
 }
 
 impl<'a> SvVoteOptionAdd<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<SvVoteOptionAdd<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<SvVoteOptionAdd<'a>, Error> {
         let result = Ok(SvVoteOptionAdd {
-            description: sanitize(warn, _p.read_string()?)?,
+            description: sanitize(warn, p.read_string()?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        sanitize(&mut Panic, self.description).unwrap();
-        _p.write_string(self.description)?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        sanitize(&mut Panic, self.description).unwrap_or_else(|_| unreachable!());
+        p.write_string(self.description)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for SvVoteOptionAdd<'a> {
+impl fmt::Debug for SvVoteOptionAdd<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("SvVoteOptionAdd")
-            .field("description", &pretty::Bytes::new(&self.description))
+            .field("description", &pretty::Bytes::new(self.description))
             .finish()
     }
 }
 
 impl<'a> SvVoteOptionRemove<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<SvVoteOptionRemove<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<SvVoteOptionRemove<'a>, Error> {
         let result = Ok(SvVoteOptionRemove {
-            description: sanitize(warn, _p.read_string()?)?,
+            description: sanitize(warn, p.read_string()?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        sanitize(&mut Panic, self.description).unwrap();
-        _p.write_string(self.description)?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        sanitize(&mut Panic, self.description).unwrap_or_else(|_| unreachable!());
+        p.write_string(self.description)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for SvVoteOptionRemove<'a> {
+impl fmt::Debug for SvVoteOptionRemove<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("SvVoteOptionRemove")
-            .field("description", &pretty::Bytes::new(&self.description))
+            .field("description", &pretty::Bytes::new(self.description))
             .finish()
     }
 }
 
 impl<'a> SvVoteSet<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<SvVoteSet<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<SvVoteSet<'a>, Error> {
         let result = Ok(SvVoteSet {
-            timeout: in_range(_p.read_int(warn)?, 0, 60)?,
-            description: sanitize(warn, _p.read_string()?)?,
-            reason: sanitize(warn, _p.read_string()?)?,
+            timeout: in_range(p.read_int(warn)?, 0, 60)?,
+            description: sanitize(warn, p.read_string()?)?,
+            reason: sanitize(warn, p.read_string()?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         assert!(0 <= self.timeout && self.timeout <= 60);
-        sanitize(&mut Panic, self.description).unwrap();
-        sanitize(&mut Panic, self.reason).unwrap();
-        _p.write_int(self.timeout)?;
-        _p.write_string(self.description)?;
-        _p.write_string(self.reason)?;
-        Ok(_p.written())
+        sanitize(&mut Panic, self.description).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.reason).unwrap_or_else(|_| unreachable!());
+        p.write_int(self.timeout)?;
+        p.write_string(self.description)?;
+        p.write_string(self.reason)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for SvVoteSet<'a> {
+impl fmt::Debug for SvVoteSet<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("SvVoteSet")
             .field("timeout", &self.timeout)
-            .field("description", &pretty::Bytes::new(&self.description))
-            .field("reason", &pretty::Bytes::new(&self.reason))
+            .field("description", &pretty::Bytes::new(self.description))
+            .field("reason", &pretty::Bytes::new(self.reason))
             .finish()
     }
 }
 
 impl SvVoteStatus {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<SvVoteStatus, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<SvVoteStatus, Error> {
         let result = Ok(SvVoteStatus {
-            yes: in_range(_p.read_int(warn)?, 0, 16)?,
-            no: in_range(_p.read_int(warn)?, 0, 16)?,
-            pass: in_range(_p.read_int(warn)?, 0, 16)?,
-            total: in_range(_p.read_int(warn)?, 0, 16)?,
+            yes: in_range(p.read_int(warn)?, 0, 16)?,
+            no: in_range(p.read_int(warn)?, 0, 16)?,
+            pass: in_range(p.read_int(warn)?, 0, 16)?,
+            total: in_range(p.read_int(warn)?, 0, 16)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         assert!(0 <= self.yes && self.yes <= 16);
         assert!(0 <= self.no && self.no <= 16);
         assert!(0 <= self.pass && self.pass <= 16);
         assert!(0 <= self.total && self.total <= 16);
-        _p.write_int(self.yes)?;
-        _p.write_int(self.no)?;
-        _p.write_int(self.pass)?;
-        _p.write_int(self.total)?;
-        Ok(_p.written())
+        p.write_int(self.yes)?;
+        p.write_int(self.no)?;
+        p.write_int(self.pass)?;
+        p.write_int(self.total)?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for SvVoteStatus {
@@ -1078,41 +1080,41 @@ impl fmt::Debug for SvVoteStatus {
 }
 
 impl<'a> ClSay<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<ClSay<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<ClSay<'a>, Error> {
         let result = Ok(ClSay {
-            team: to_bool(_p.read_int(warn)?)?,
-            message: sanitize(warn, _p.read_string()?)?,
+            team: to_bool(p.read_int(warn)?)?,
+            message: sanitize(warn, p.read_string()?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        sanitize(&mut Panic, self.message).unwrap();
-        _p.write_int(self.team as i32)?;
-        _p.write_string(self.message)?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        sanitize(&mut Panic, self.message).unwrap_or_else(|_| unreachable!());
+        p.write_int(i32::from(self.team))?;
+        p.write_string(self.message)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for ClSay<'a> {
+impl fmt::Debug for ClSay<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ClSay")
             .field("team", &self.team)
-            .field("message", &pretty::Bytes::new(&self.message))
+            .field("message", &pretty::Bytes::new(self.message))
             .finish()
     }
 }
 
 impl ClSetTeam {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<ClSetTeam, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<ClSetTeam, Error> {
         let result = Ok(ClSetTeam {
-            team: enums::Team::from_i32(_p.read_int(warn)?)?,
+            team: enums::Team::from_i32(p.read_int(warn)?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_int(self.team.to_i32())?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_int(self.team.to_i32())?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for ClSetTeam {
@@ -1124,17 +1126,17 @@ impl fmt::Debug for ClSetTeam {
 }
 
 impl ClSetSpectatorMode {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<ClSetSpectatorMode, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<ClSetSpectatorMode, Error> {
         let result = Ok(ClSetSpectatorMode {
-            spectator_id: in_range(_p.read_int(warn)?, -1, 15)?,
+            spectator_id: in_range(p.read_int(warn)?, -1, 15)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         assert!(-1 <= self.spectator_id && self.spectator_id <= 15);
-        _p.write_int(self.spectator_id)?;
-        Ok(_p.written())
+        p.write_int(self.spectator_id)?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for ClSetSpectatorMode {
@@ -1146,40 +1148,40 @@ impl fmt::Debug for ClSetSpectatorMode {
 }
 
 impl<'a> ClStartInfo<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<ClStartInfo<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<ClStartInfo<'a>, Error> {
         let result = Ok(ClStartInfo {
-            name: sanitize(warn, _p.read_string()?)?,
-            clan: sanitize(warn, _p.read_string()?)?,
-            country: _p.read_int(warn)?,
-            skin: sanitize(warn, _p.read_string()?)?,
-            use_custom_color: to_bool(_p.read_int(warn)?)?,
-            color_body: _p.read_int(warn)?,
-            color_feet: _p.read_int(warn)?,
+            name: sanitize(warn, p.read_string()?)?,
+            clan: sanitize(warn, p.read_string()?)?,
+            country: p.read_int(warn)?,
+            skin: sanitize(warn, p.read_string()?)?,
+            use_custom_color: to_bool(p.read_int(warn)?)?,
+            color_body: p.read_int(warn)?,
+            color_feet: p.read_int(warn)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        sanitize(&mut Panic, self.name).unwrap();
-        sanitize(&mut Panic, self.clan).unwrap();
-        sanitize(&mut Panic, self.skin).unwrap();
-        _p.write_string(self.name)?;
-        _p.write_string(self.clan)?;
-        _p.write_int(self.country)?;
-        _p.write_string(self.skin)?;
-        _p.write_int(self.use_custom_color as i32)?;
-        _p.write_int(self.color_body)?;
-        _p.write_int(self.color_feet)?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        sanitize(&mut Panic, self.name).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.clan).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.skin).unwrap_or_else(|_| unreachable!());
+        p.write_string(self.name)?;
+        p.write_string(self.clan)?;
+        p.write_int(self.country)?;
+        p.write_string(self.skin)?;
+        p.write_int(i32::from(self.use_custom_color))?;
+        p.write_int(self.color_body)?;
+        p.write_int(self.color_feet)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for ClStartInfo<'a> {
+impl fmt::Debug for ClStartInfo<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ClStartInfo")
-            .field("name", &pretty::Bytes::new(&self.name))
-            .field("clan", &pretty::Bytes::new(&self.clan))
+            .field("name", &pretty::Bytes::new(self.name))
+            .field("clan", &pretty::Bytes::new(self.clan))
             .field("country", &self.country)
-            .field("skin", &pretty::Bytes::new(&self.skin))
+            .field("skin", &pretty::Bytes::new(self.skin))
             .field("use_custom_color", &self.use_custom_color)
             .field("color_body", &self.color_body)
             .field("color_feet", &self.color_feet)
@@ -1188,40 +1190,40 @@ impl<'a> fmt::Debug for ClStartInfo<'a> {
 }
 
 impl<'a> ClChangeInfo<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<ClChangeInfo<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<ClChangeInfo<'a>, Error> {
         let result = Ok(ClChangeInfo {
-            name: sanitize(warn, _p.read_string()?)?,
-            clan: sanitize(warn, _p.read_string()?)?,
-            country: _p.read_int(warn)?,
-            skin: sanitize(warn, _p.read_string()?)?,
-            use_custom_color: to_bool(_p.read_int(warn)?)?,
-            color_body: _p.read_int(warn)?,
-            color_feet: _p.read_int(warn)?,
+            name: sanitize(warn, p.read_string()?)?,
+            clan: sanitize(warn, p.read_string()?)?,
+            country: p.read_int(warn)?,
+            skin: sanitize(warn, p.read_string()?)?,
+            use_custom_color: to_bool(p.read_int(warn)?)?,
+            color_body: p.read_int(warn)?,
+            color_feet: p.read_int(warn)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        sanitize(&mut Panic, self.name).unwrap();
-        sanitize(&mut Panic, self.clan).unwrap();
-        sanitize(&mut Panic, self.skin).unwrap();
-        _p.write_string(self.name)?;
-        _p.write_string(self.clan)?;
-        _p.write_int(self.country)?;
-        _p.write_string(self.skin)?;
-        _p.write_int(self.use_custom_color as i32)?;
-        _p.write_int(self.color_body)?;
-        _p.write_int(self.color_feet)?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        sanitize(&mut Panic, self.name).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.clan).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.skin).unwrap_or_else(|_| unreachable!());
+        p.write_string(self.name)?;
+        p.write_string(self.clan)?;
+        p.write_int(self.country)?;
+        p.write_string(self.skin)?;
+        p.write_int(i32::from(self.use_custom_color))?;
+        p.write_int(self.color_body)?;
+        p.write_int(self.color_feet)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for ClChangeInfo<'a> {
+impl fmt::Debug for ClChangeInfo<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ClChangeInfo")
-            .field("name", &pretty::Bytes::new(&self.name))
-            .field("clan", &pretty::Bytes::new(&self.clan))
+            .field("name", &pretty::Bytes::new(self.name))
+            .field("clan", &pretty::Bytes::new(self.clan))
             .field("country", &self.country)
-            .field("skin", &pretty::Bytes::new(&self.skin))
+            .field("skin", &pretty::Bytes::new(self.skin))
             .field("use_custom_color", &self.use_custom_color)
             .field("color_body", &self.color_body)
             .field("color_feet", &self.color_feet)
@@ -1230,13 +1232,13 @@ impl<'a> fmt::Debug for ClChangeInfo<'a> {
 }
 
 impl ClKill {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<ClKill, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<ClKill, Error> {
         let result = Ok(ClKill);
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        Ok(_p.written())
+    pub fn encode<'d>(&self, p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        Ok(p.written())
     }
 }
 impl fmt::Debug for ClKill {
@@ -1247,16 +1249,16 @@ impl fmt::Debug for ClKill {
 }
 
 impl ClEmoticon {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<ClEmoticon, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<ClEmoticon, Error> {
         let result = Ok(ClEmoticon {
-            emoticon: enums::Emoticon::from_i32(_p.read_int(warn)?)?,
+            emoticon: enums::Emoticon::from_i32(p.read_int(warn)?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        _p.write_int(self.emoticon.to_i32())?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        p.write_int(self.emoticon.to_i32())?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for ClEmoticon {
@@ -1268,17 +1270,17 @@ impl fmt::Debug for ClEmoticon {
 }
 
 impl ClVote {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker) -> Result<ClVote, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker) -> Result<ClVote, Error> {
         let result = Ok(ClVote {
-            vote: in_range(_p.read_int(warn)?, -1, 1)?,
+            vote: in_range(p.read_int(warn)?, -1, 1)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         assert!(-1 <= self.vote && self.vote <= 1);
-        _p.write_int(self.vote)?;
-        Ok(_p.written())
+        p.write_int(self.vote)?;
+        Ok(p.written())
     }
 }
 impl fmt::Debug for ClVote {
@@ -1290,31 +1292,31 @@ impl fmt::Debug for ClVote {
 }
 
 impl<'a> ClCallVote<'a> {
-    pub fn decode<W: Warn<Warning>>(warn: &mut W, _p: &mut Unpacker<'a>) -> Result<ClCallVote<'a>, Error> {
+    pub fn decode<W: Warn<Warning>>(warn: &mut W, p: &mut Unpacker<'a>) -> Result<ClCallVote<'a>, Error> {
         let result = Ok(ClCallVote {
-            type_: sanitize(warn, _p.read_string()?)?,
-            value: sanitize(warn, _p.read_string()?)?,
-            reason: sanitize(warn, _p.read_string()?)?,
+            type_: sanitize(warn, p.read_string()?)?,
+            value: sanitize(warn, p.read_string()?)?,
+            reason: sanitize(warn, p.read_string()?)?,
         });
-        _p.finish(wrap(warn));
+        p.finish(wrap(warn));
         result
     }
-    pub fn encode<'d, 's>(&self, mut _p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
-        sanitize(&mut Panic, self.type_).unwrap();
-        sanitize(&mut Panic, self.value).unwrap();
-        sanitize(&mut Panic, self.reason).unwrap();
-        _p.write_string(self.type_)?;
-        _p.write_string(self.value)?;
-        _p.write_string(self.reason)?;
-        Ok(_p.written())
+    pub fn encode<'d>(&self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
+        sanitize(&mut Panic, self.type_).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.value).unwrap_or_else(|_| unreachable!());
+        sanitize(&mut Panic, self.reason).unwrap_or_else(|_| unreachable!());
+        p.write_string(self.type_)?;
+        p.write_string(self.value)?;
+        p.write_string(self.reason)?;
+        Ok(p.written())
     }
 }
-impl<'a> fmt::Debug for ClCallVote<'a> {
+impl fmt::Debug for ClCallVote<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ClCallVote")
-            .field("type_", &pretty::Bytes::new(&self.type_))
-            .field("value", &pretty::Bytes::new(&self.value))
-            .field("reason", &pretty::Bytes::new(&self.reason))
+            .field("type_", &pretty::Bytes::new(self.type_))
+            .field("value", &pretty::Bytes::new(self.value))
+            .field("reason", &pretty::Bytes::new(self.reason))
             .finish()
     }
 }
