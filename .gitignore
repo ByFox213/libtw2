@@ -13,3 +13,9 @@ a.out
 main
 
 target/
+
+# Jetbrains idea
+.idea/
+
+.codex
+
