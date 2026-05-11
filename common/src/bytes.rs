@@ -32,7 +32,10 @@ pub trait FromBytesExt: ByteArray + zerocopy::FromBytes {
             return None;
         }
         let (result, rest) = bytes.split_at(mem::size_of::<Self>());
-        Some((Self::ref_from(result).unwrap_or_else(|| unreachable!())  , rest))
+        Some((
+            Self::ref_from(result).unwrap_or_else(|| unreachable!()),
+            rest,
+        ))
     }
     fn ref_from_array(bytes: &Self::ByteArray) -> &Self
     where
