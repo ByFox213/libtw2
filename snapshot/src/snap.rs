@@ -173,7 +173,7 @@ impl Clone for RawSnap {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct RawEntry {
     key: i32,
     start: u32,
@@ -265,7 +265,9 @@ impl RawSnap {
 
         let offset = self.buf.len();
         let size = data.len();
-        if !RawSnap::would_fit(num_items + 1, offset + size) {
+        // Inline the size check, this is hot in snapshot construction.
+        const MAX_INTS: usize = MAX_SNAPSHOT_SIZE / mem::size_of::<i32>();
+        if 2 + (2 * (num_items + 1)) + (offset + size) > MAX_INTS {
             return Err(BuilderError::TooLongSnap);
         }
         let start = offset.assert_u32();
@@ -590,6 +592,14 @@ impl RawSnap {
     pub fn recycle(mut self) -> RawBuilder {
         self.clear();
         RawBuilder { snap: self }
+    }
+
+    pub fn recycle_sorted(mut self) -> RawBuilderSorted {
+        self.clear();
+        RawBuilderSorted {
+            snap: self,
+            last_key: None,
+        }
     }
 }
 
@@ -1205,15 +1215,63 @@ impl RawBuilder {
         Default::default()
     }
     pub fn add_item(&mut self, type_id: u16, id: u16, data: &[i32]) -> Result<(), BuilderError> {
-        if !self.snap.seen.insert(key(type_id, id)) {
+        let k = key(type_id, id);
+        if !self.snap.seen.insert(k) {
             return Err(BuilderError::DuplicateKey);
         }
-        self.snap.push_item(type_id, id, data)
+        self.snap.push_item_copy(k, data)
     }
     pub fn finish(self) -> RawSnap {
         let mut snap = self.snap;
         snap.sort_items();
         snap
+    }
+
+    /// Finish building a snapshot without sorting items.
+    ///
+    /// This is only valid if items were already added in sorted key order
+    /// (by `(raw_type_id, id)`) and without duplicates.
+    pub fn finish_sorted(self) -> RawSnap {
+        self.snap
+    }
+}
+
+pub struct RawBuilderSorted {
+    snap: RawSnap,
+    last_key: Option<u32>,
+}
+
+impl Default for RawBuilderSorted {
+    fn default() -> Self {
+        RawBuilderSorted {
+            snap: RawSnap::default(),
+            last_key: None,
+        }
+    }
+}
+
+impl RawBuilderSorted {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// Add an item assuming calls come in non-decreasing key order.
+    ///
+    /// This avoids the hash-based duplicate check and allows a `finish_sorted()`
+    /// without any sorting.
+    pub fn add_item(&mut self, type_id: u16, id: u16, data: &[i32]) -> Result<(), BuilderError> {
+        let k = key(type_id, id) as u32;
+        if let Some(prev) = self.last_key {
+            if k <= prev {
+                return Err(BuilderError::DuplicateKey);
+            }
+        }
+        self.last_key = Some(k);
+        self.snap.push_item_copy(k as i32, data)
+    }
+
+    pub fn finish_sorted(self) -> RawSnap {
+        self.snap
     }
 }
 

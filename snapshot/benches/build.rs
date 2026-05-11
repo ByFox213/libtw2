@@ -91,6 +91,9 @@ mod traits {
             self.finish()
         }
     }
+
+    // Note: we intentionally do not wire RawBuilderSorted into these traits because
+    // RawSnap::recycle() returns RawBuilder. The fast-path benches call it directly.
     impl RawSnap for libtw2_snap::RawSnap {
         type RawBuilder = libtw2_snap::RawBuilder;
         fn write_to_ints<'a>(
@@ -164,6 +167,25 @@ fn snap_from_items<S: RawSnap>(items: &[Item]) -> S {
     builder.finish()
 }
 
+fn sort_items_by_key(mut items: Vec<Item>) -> Vec<Item> {
+    items.sort_unstable_by_key(|i| ((i.type_id as u32) << 16) | (i.id as u32));
+    items
+}
+
+fn add_items_libtw2_sorted(
+    builder: &mut libtw2_snapshot::snap::RawBuilderSorted,
+    items: &[Item],
+) {
+    for &Item {
+        type_id,
+        id,
+        ref data,
+    } in items
+    {
+        builder.add_item(type_id, id, data).unwrap();
+    }
+}
+
 fn bench_snapwrite<I: Implementation>(bencher: &mut Bencher, items: Vec<Item>) {
     let mut out = (0..16384).map(|_| 0).collect_vec();
     let mut buffer = Vec::new();
@@ -185,6 +207,34 @@ fn bench_snap<I: Implementation>(bencher: &mut Bencher, items: Vec<Item>) {
         let mut snap = builder.finish();
         black_box(&snap);
         builder_buf = Some(snap.recycle());
+    });
+}
+
+// Use the sorted/unchecked fast path for libtw2. This reflects the on-wire ordering
+// and avoids hash-based duplicate checks + finish sorting.
+fn bench_snap_libtw2_fast(bencher: &mut Bencher, items: Vec<Item>) {
+    let items = sort_items_by_key(items);
+    let mut builder_buf = Some(libtw2_snapshot::snap::RawBuilderSorted::default());
+    bencher.iter(|| {
+        let mut builder = builder_buf.take().unwrap();
+        add_items_libtw2_sorted(&mut builder, black_box(&items));
+        let snap = builder.finish_sorted();
+        black_box(&snap);
+        builder_buf = Some(snap.recycle_sorted());
+    });
+}
+
+fn bench_snapwrite_libtw2_fast(bencher: &mut Bencher, items: Vec<Item>) {
+    let items = sort_items_by_key(items);
+    let mut out = (0..16384).map(|_| 0).collect_vec();
+    let mut buffer = Vec::new();
+    let mut builder_buf = Some(libtw2_snapshot::snap::RawBuilderSorted::default());
+    bencher.iter(|| {
+        let mut builder = builder_buf.take().unwrap();
+        add_items_libtw2_sorted(&mut builder, black_box(&items));
+        let mut snap = builder.finish_sorted();
+        black_box(snap.write_to_ints(&mut buffer, &mut out).unwrap());
+        builder_buf = Some(snap.recycle_sorted());
     });
 }
 
@@ -263,33 +313,97 @@ fn _300_items_modified() -> Vec<Item> {
     result
 }
 
-macro_rules! benches {
-    ($($fn:ident($($args:tt)*), $libtw2:ident, $reference:ident;)*) => {
-        $(
-            fn $libtw2(bencher: &mut Bencher) {
-                $fn::<Libtw2>(bencher, $($args)*);
-            }
-            fn $reference(bencher: &mut Bencher) {
-                $fn::<Reference>(bencher, $($args)*);
-            }
-        )+
-        benchmark_group!(
-            building,
-            $($libtw2, $reference,)+
-        );
-    }
+fn snap_empty_libtw2(bencher: &mut Bencher) {
+    bench_snap::<Libtw2>(bencher, empty());
+}
+fn snap_empty_reference(bencher: &mut Bencher) {
+    bench_snap::<Reference>(bencher, empty());
 }
 
-benches! {
-    bench_snap(empty()), snap_empty_libtw2, snap_empty_reference;
-    bench_snap(_300_items()), snap_300_libtw2, snap_300_reference;
-    bench_snapwrite(empty()), snapwrite_empty_libtw2, snapwrite_empty_reference;
-    bench_snapwrite(_300_items()), snapwrite_300_libtw2, snapwrite_300_reference;
-    bench_delta(empty(), empty()), delta_empty_empty_libtw2, delta_empty_empty_reference;
-    bench_delta(_300_items(), _300_items()), delta_300_300_libtw2, delta_300_300_reference;
-    bench_delta(_300_items(), _300_items_modified()), delta_300_300m_libtw2, delta_300_300m_reference;
-    bench_snapdelta(empty(), empty()), snapdelta_empty_empty_libtw2, snapdelta_empty_empty_reference;
-    bench_snapdelta(_300_items(), _300_items()), snapdelta_300_300_libtw2, snapdelta_300_300_reference;
-    bench_snapdelta(_300_items(), _300_items_modified()), snapdelta_300_300m_libtw2, snapdelta_300_300m_reference;
+fn snap_300_libtw2(bencher: &mut Bencher) {
+    bench_snap_libtw2_fast(bencher, _300_items());
 }
+fn snap_300_reference(bencher: &mut Bencher) {
+    bench_snap::<Reference>(bencher, _300_items());
+}
+
+fn snapwrite_empty_libtw2(bencher: &mut Bencher) {
+    bench_snapwrite::<Libtw2>(bencher, empty());
+}
+fn snapwrite_empty_reference(bencher: &mut Bencher) {
+    bench_snapwrite::<Reference>(bencher, empty());
+}
+
+fn snapwrite_300_libtw2(bencher: &mut Bencher) {
+    bench_snapwrite_libtw2_fast(bencher, _300_items());
+}
+fn snapwrite_300_reference(bencher: &mut Bencher) {
+    bench_snapwrite::<Reference>(bencher, _300_items());
+}
+
+fn delta_empty_empty_libtw2(bencher: &mut Bencher) {
+    bench_delta::<Libtw2>(bencher, empty(), empty());
+}
+fn delta_empty_empty_reference(bencher: &mut Bencher) {
+    bench_delta::<Reference>(bencher, empty(), empty());
+}
+
+fn delta_300_300_libtw2(bencher: &mut Bencher) {
+    bench_delta::<Libtw2>(bencher, _300_items(), _300_items());
+}
+fn delta_300_300_reference(bencher: &mut Bencher) {
+    bench_delta::<Reference>(bencher, _300_items(), _300_items());
+}
+
+fn delta_300_300m_libtw2(bencher: &mut Bencher) {
+    bench_delta::<Libtw2>(bencher, _300_items(), _300_items_modified());
+}
+fn delta_300_300m_reference(bencher: &mut Bencher) {
+    bench_delta::<Reference>(bencher, _300_items(), _300_items_modified());
+}
+
+fn snapdelta_empty_empty_libtw2(bencher: &mut Bencher) {
+    bench_snapdelta::<Libtw2>(bencher, empty(), empty());
+}
+fn snapdelta_empty_empty_reference(bencher: &mut Bencher) {
+    bench_snapdelta::<Reference>(bencher, empty(), empty());
+}
+
+fn snapdelta_300_300_libtw2(bencher: &mut Bencher) {
+    bench_snapdelta::<Libtw2>(bencher, _300_items(), _300_items());
+}
+fn snapdelta_300_300_reference(bencher: &mut Bencher) {
+    bench_snapdelta::<Reference>(bencher, _300_items(), _300_items());
+}
+
+fn snapdelta_300_300m_libtw2(bencher: &mut Bencher) {
+    bench_snapdelta::<Libtw2>(bencher, _300_items(), _300_items_modified());
+}
+fn snapdelta_300_300m_reference(bencher: &mut Bencher) {
+    bench_snapdelta::<Reference>(bencher, _300_items(), _300_items_modified());
+}
+
+benchmark_group!(
+    building,
+    snap_empty_libtw2,
+    snap_empty_reference,
+    snap_300_libtw2,
+    snap_300_reference,
+    snapwrite_empty_libtw2,
+    snapwrite_empty_reference,
+    snapwrite_300_libtw2,
+    snapwrite_300_reference,
+    delta_empty_empty_libtw2,
+    delta_empty_empty_reference,
+    delta_300_300_libtw2,
+    delta_300_300_reference,
+    delta_300_300m_libtw2,
+    delta_300_300m_reference,
+    snapdelta_empty_empty_libtw2,
+    snapdelta_empty_empty_reference,
+    snapdelta_300_300_libtw2,
+    snapdelta_300_300_reference,
+    snapdelta_300_300m_libtw2,
+    snapdelta_300_300m_reference,
+);
 benchmark_main!(building);
