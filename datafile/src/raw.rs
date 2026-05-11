@@ -380,12 +380,7 @@ impl Reader {
     }
 
     pub fn find_item(&self, type_id: u16, item_id: u16) -> Option<ItemView<'_>> {
-        for item in self.item_type_items(type_id) {
-            if item.id == item_id {
-                return Some(item);
-            }
-        }
-        None
+        self.item_type_items(type_id).find(|item| item.id == item_id)
     }
 
     pub fn debug_dump(&self, cb: &mut dyn CallbackReadData) -> Result<(), Error> {

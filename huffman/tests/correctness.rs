@@ -64,7 +64,7 @@ fn compressed_len() {
         assert!(compressed_len <= compressed_len_bug);
         assert!(compressed_len_bug <= compressed_len + 1);
 
-        assert_eq!(compressed_len_bug, compressed.len())
+        assert_eq!(compressed_len_bug, compressed.len());
     }
 }
 

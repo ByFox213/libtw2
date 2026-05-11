@@ -139,7 +139,7 @@ impl<'r, 'd, 's> Buffer<'d> for &'r mut Packer<'d, 's> {
 
 impl<'d, 's> Packer<'d, 's> {
     fn new(buf: BufferRef<'d, 's>) -> Packer<'d, 's> {
-        Packer { buf: buf }
+        Packer { buf }
     }
     pub fn write_string(&mut self, string: &[u8]) -> Result<(), CapacityError> {
         write_string(string, |b| self.buf.write(b))
@@ -186,7 +186,7 @@ impl<'a> Unpacker<'a> {
         Unpacker {
             original: data,
             iter: data.iter(),
-            demo: demo,
+            demo,
         }
     }
     pub fn new(data: &[u8]) -> Unpacker<'_> {
@@ -247,7 +247,11 @@ impl<'a> Unpacker<'a> {
     }
     #[cfg(feature = "uuid")]
     pub fn read_uuid(&mut self) -> Result<Uuid, UnexpectedEnd> {
-        Ok(Uuid::from_slice(self.read_raw(mem::size_of::<Uuid>())?).unwrap())
+        let raw = self.read_raw(mem::size_of::<Uuid>())?;
+        match Uuid::from_slice(raw) {
+            Ok(uuid) => Ok(uuid),
+            Err(_) => Err(UnexpectedEnd),
+        }
     }
     pub fn finish<W: Warn<ExcessData>>(&mut self, warn: &mut W) {
         if !self.demo {
@@ -342,7 +346,7 @@ pub fn positive(v: i32) -> Result<i32, IntOutOfRange> {
 pub fn string_to_ints(result: &mut [i32], string: &[u8]) {
     assert!(string.iter().all(|&b| b != 0));
     // Strict less-than because of the NUL-termination.
-    assert!(string.len() < result.len() * mem::size_of::<i32>());
+    assert!(string.len() < std::mem::size_of_val(result));
     let mut output = result.iter_mut();
     let mut input = string.iter().cloned();
     while let Some(o) = output.next() {

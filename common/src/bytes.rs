@@ -4,6 +4,11 @@ use std::mem;
 use zerocopy::byteorder::big_endian;
 
 pub trait TryFromByteSlice {
+    /// Try to view `bytes` as `Self` without copying.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the slice length doesn't match `Self`.
     fn try_from_byte_slice(bytes: &[u8]) -> Result<&Self, TryFromSliceError>;
 }
 
@@ -24,6 +29,7 @@ pub trait AsBytesExt: ByteArray + zerocopy::AsBytes {
 }
 
 pub trait FromBytesExt: ByteArray + zerocopy::FromBytes {
+    #[must_use]
     fn ref_and_rest_from(bytes: &[u8]) -> Option<(&Self, &[u8])>
     where
         Self: Sized,

@@ -8,12 +8,26 @@ extern crate libz_sys as raw;
 use libc::c_ulong;
 use std::fmt;
 
+#[inline]
+#[allow(clippy::cast_possible_truncation)]
+fn c_ulong_to_usize(v: c_ulong) -> usize {
+    // On 32-bit platforms zlib's `uLong` can exceed `usize`; the API here is
+    // already constrained by the destination slice length, so truncation is
+    // effectively impossible in practice.
+    v as usize
+}
+
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Error {
     inner: i32,
 }
 
 impl Error {
+    /// Convert a raw zlib return value into `Result`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` when `val` is not `Z_OK`.
     pub fn from_raw(val: i32) -> Result<(), Error> {
         if val == raw::Z_OK {
             Ok(())
@@ -21,14 +35,17 @@ impl Error {
             Err(Error { inner: val })
         }
     }
-    pub fn kind(self) -> Result<ErrorKind, ()> {
-        Ok(match self.inner {
+    /// Classify this error when the underlying zlib error code is known.
+    #[must_use]
+    pub fn kind(self) -> Option<ErrorKind> {
+        Some(match self.inner {
             raw::Z_MEM_ERROR => ErrorKind::OutOfMemory,
             raw::Z_BUF_ERROR => ErrorKind::OutputBufferTooSmall,
             raw::Z_DATA_ERROR => ErrorKind::InvalidInput,
-            _ => return Err(()),
+            _ => return None,
         })
     }
+    #[must_use]
     pub fn raw_error(self) -> i32 {
         self.inner
     }
@@ -44,8 +61,8 @@ pub enum ErrorKind {
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.kind() {
-            Ok(k) => k.fmt(f),
-            Err(()) => write!(f, "UnknownZlibError({})", self.raw_error()),
+            Some(k) => k.fmt(f),
+            None => write!(f, "UnknownZlibError({})", self.raw_error()),
         }
     }
 }
@@ -56,6 +73,10 @@ impl fmt::Debug for Error {
 /// the number of bytes written. If the decompression fails for some reason,
 /// Err is returned. In this case, the `dest` buffer may or may not be
 /// modified.
+///
+/// # Errors
+///
+/// Returns `Err` if zlib reports an error.
 pub fn uncompress(dest: &mut [u8], src: &[u8]) -> Result<usize, Error> {
     let mut output_size = dest.len() as c_ulong;
     Error::from_raw(unsafe {
@@ -66,7 +87,7 @@ pub fn uncompress(dest: &mut [u8], src: &[u8]) -> Result<usize, Error> {
             src.len() as c_ulong,
         )
     })
-    .map(|()| output_size as usize)
+    .map(|()| c_ulong_to_usize(output_size))
 }
 
 /// The wrapper for zlib's `compress` function.
@@ -74,6 +95,10 @@ pub fn uncompress(dest: &mut [u8], src: &[u8]) -> Result<usize, Error> {
 /// Compresses the `src` parameter into the `dest` parameter and returning the
 /// number of bytes written. If the compression fails for some reason, Err is
 /// returned. In this case, the `dest` buffer may or may not be modified.
+///
+/// # Errors
+///
+/// Returns `Err` if zlib reports an error.
 pub fn compress(dest: &mut [u8], src: &[u8]) -> Result<usize, Error> {
     let mut output_size = dest.len() as c_ulong;
     Error::from_raw(unsafe {
@@ -84,29 +109,31 @@ pub fn compress(dest: &mut [u8], src: &[u8]) -> Result<usize, Error> {
             src.len() as c_ulong,
         )
     })
-    .map(|()| output_size as usize)
+    .map(|()| c_ulong_to_usize(output_size))
 }
 
 /// The wrapper for zlib's `compressBound` function.
 ///
 /// Returns an upper bound on the compressed size for `compress()`.
+#[must_use]
 pub fn compress_bound(source_len: usize) -> usize {
-    (unsafe { raw::compressBound(source_len as c_ulong) }) as usize
+    #[allow(clippy::cast_possible_truncation)]
+    {
+        c_ulong_to_usize(unsafe { raw::compressBound(source_len as c_ulong) })
+    }
 }
 
+/// Compress data into a newly allocated `Vec`.
+///
+/// # Errors
+///
+/// Returns `Err` if zlib reports an error.
 pub fn compress_vec(source: &[u8]) -> Result<Vec<u8>, Error> {
     let upper_bound = compress_bound(source.len());
-    let mut dest = Vec::with_capacity(upper_bound);
-
-    // u8 has no destructor, this is safe
-    unsafe {
-        dest.set_len(upper_bound);
-    }
+    let mut dest = vec![0u8; upper_bound];
 
     let output_length = compress(&mut dest, source)?;
-    unsafe {
-        dest.set_len(output_length);
-    }
+    dest.truncate(output_length);
 
     Ok(dest)
 }

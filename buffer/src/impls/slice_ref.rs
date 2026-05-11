@@ -1,3 +1,5 @@
+#![allow(clippy::mut_mut)]
+
 use crate::wildly_unsafe;
 use crate::Buffer;
 use crate::BufferRef;
@@ -27,8 +29,9 @@ impl<'d> SliceRefBuffer<'d> {
     }
 }
 
-impl<'d> Drop for SliceRefBuffer<'d> {
+impl Drop for SliceRefBuffer<'_> {
     fn drop(&mut self) {
+        #[allow(clippy::mem_replace_with_default)]
         let slice = mem::replace(self.slice, &mut []);
         *self.slice = &mut slice[..self.initialized];
     }

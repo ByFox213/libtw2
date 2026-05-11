@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 /// See its documentation for more info.
 pub struct CapAt<'data, T: Buffer<'data>> {
     buf: T,
-    cap_at: usize,
+    cap: usize,
     phantom: PhantomData<&'data ()>,
 }
 
@@ -17,7 +17,7 @@ impl<'data, T: Buffer<'data>> CapAtImpl<'data> for T {
     fn cap_at_impl(self, len: usize) -> CapAt<'data, Self> {
         CapAt {
             buf: self,
-            cap_at: len,
+            cap: len,
             phantom: PhantomData,
         }
     }
@@ -26,7 +26,7 @@ impl<'data, T: Buffer<'data>> CapAtImpl<'data> for T {
 /// The intermediate step from a `CapAt` to a `BufferRef`.
 pub struct CapAtBuffer<'data, T: ToBufferRef<'data>> {
     intermediate: T,
-    cap_at: usize,
+    cap: usize,
     phantom: PhantomData<&'data ()>,
 }
 
@@ -34,12 +34,12 @@ impl<'data, T: ToBufferRef<'data>> CapAtBuffer<'data, T> {
     fn new<U: Buffer<'data, Intermediate = T>>(cap_at: CapAt<'data, U>) -> CapAtBuffer<'data, T> {
         CapAtBuffer {
             intermediate: cap_at.buf.to_to_buffer_ref(),
-            cap_at: cap_at.cap_at,
+            cap: cap_at.cap,
             phantom: PhantomData,
         }
     }
     fn buffer<'size>(&'size mut self) -> BufferRef<'data, 'size> {
-        self.intermediate.to_buffer_ref().cap_at(self.cap_at)
+        self.intermediate.to_buffer_ref().cap_at(self.cap)
     }
 }
 

@@ -63,6 +63,11 @@ pub struct ItemHeader {
 
 // A struct may only implement OnlyI32 if it consists entirely of tightly
 // packed i32 and does not have a destructor.
+///
+/// # Safety
+///
+/// Implementors must be plain old data consisting only of tightly packed
+/// `i32` values and must not have a destructor.
 pub unsafe trait OnlyI32: Copy {}
 unsafe impl OnlyI32 for i32 {}
 unsafe impl OnlyI32 for Header {}

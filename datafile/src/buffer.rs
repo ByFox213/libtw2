@@ -79,7 +79,7 @@ impl Buffer {
     pub fn item_type(&self, index: usize) -> u16 {
         self.item_types
             .get(index)
-            .expect("Invalid type index")
+            .unwrap_or_else(|| panic!("Invalid type index"))
             .type_id
     }
     pub fn num_item_types(&self) -> usize {

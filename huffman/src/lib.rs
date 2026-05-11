@@ -25,6 +25,7 @@ pub fn compress_into<'a, B: Buffer<'a>>(
 }
 
 /// Compresses some bytes using the Teeworlds-specific Huffman code.
+#[must_use]
 pub fn compress(input: &[u8]) -> Vec<u8> {
     instances::TEEWORLDS.compress_into_vec(input)
 }
@@ -164,7 +165,7 @@ struct Bits {
 impl Bits {
     fn new(byte: u8) -> Bits {
         Bits {
-            byte: byte,
+            byte,
             remaining_bits: 8,
         }
     }
@@ -223,11 +224,11 @@ impl Huffman {
 
         while frequencies.len() > 1 {
             // Sort in reverse (upper to lower)!
-            frequencies.sort_by(|a, b| b.frequency.cmp(&a.frequency));
+            frequencies.sort_by_key(|b| std::cmp::Reverse(b.frequency));
 
             // `frequencies.len() > 1`, so these always succeed.
-            let freq1 = frequencies.pop().unwrap();
-            let freq2 = frequencies.pop().unwrap();
+            let freq1 = frequencies.pop().unwrap_or_else(|| unreachable!());
+            let freq2 = frequencies.pop().unwrap_or_else(|| unreachable!());
 
             // Combine the nodes into one.
             let node = Node {
@@ -236,7 +237,7 @@ impl Huffman {
             let node_idx = nodes.len().assert_u16();
             let node_freq = Frequency {
                 frequency: freq1.frequency.saturating_add(freq2.frequency),
-                node_idx: node_idx,
+                node_idx,
             };
 
             nodes.push(node);
@@ -278,7 +279,7 @@ impl Huffman {
             }
 
             nodes[top.usize()] = SymbolRepr {
-                bits: bits,
+                bits,
                 num_bits: stack.len().assert_u8(),
             }
             .to_node();
@@ -318,7 +319,10 @@ impl Huffman {
     pub fn compress_into_vec(&self, input: &[u8]) -> Vec<u8> {
         // At most 3 bytes per symbol, i.e. input byte. Plus EOF symbol.
         let mut result = Vec::with_capacity(input.len() * 3 + 3);
-        self.compress(input, &mut result).unwrap();
+        match self.compress(input, &mut result) {
+            Ok(_) => {}
+            Err(_) => unreachable!(),
+        }
         result.shrink_to_fit();
         result
     }
@@ -350,11 +354,14 @@ impl Huffman {
         bug: bool,
     ) -> Result<usize, ()> {
         let mut len = 0;
-        let mut output = buffer.into_iter();
+        let mut output = buffer.iter_mut();
         let mut output_byte = 0;
         let mut num_output_bits = 0;
-        for s in input.into_iter().map(|b| b.u16()).chain(Some(EOF)) {
-            let symbol = self.get_node(s).unwrap_err();
+        for s in input.iter().map(|b| b.u16()).chain(Some(EOF)) {
+            let symbol = match self.get_node(s) {
+                Ok(_) => unreachable!(),
+                Err(symbol) => symbol,
+            };
             let mut bits_written = 0;
             if symbol.num_bits >= 8 - num_output_bits {
                 output_byte |= (symbol.bits << num_output_bits) as u8;
@@ -416,9 +423,12 @@ impl Huffman {
     fn decompress_unsafe(&self, input: &[u8], buffer: &mut [u8]) -> Result<usize, ()> {
         let mut len = 0;
         {
-            let mut input = input.into_iter();
-            let mut output = buffer.into_iter();
-            let root = self.get_node(ROOT_IDX).unwrap();
+            let mut input = input.iter();
+            let mut output = buffer.iter_mut();
+            let root = match self.get_node(ROOT_IDX) {
+                Ok(root) => root,
+                Err(_) => unreachable!(),
+            };
             let mut node = root;
             'outer: loop {
                 let &byte = input.next().unwrap_or(&0);
@@ -440,7 +450,10 @@ impl Huffman {
         Ok(len)
     }
     fn symbol_bit_length(&self, idx: u16) -> u32 {
-        self.get_node(idx).unwrap_err().num_bits()
+        match self.get_node(idx) {
+            Ok(_) => unreachable!(),
+            Err(sym) => sym.num_bits(),
+        }
     }
     fn get_node(&self, idx: u16) -> Result<Node, SymbolRepr> {
         let n = self.nodes[idx.usize()];

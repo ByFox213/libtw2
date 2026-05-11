@@ -12,6 +12,7 @@ fn u32_assert_u8(bench: &mut Bencher) {
 }
 
 fn u32_assert_u8_inline(bench: &mut Bencher) {
+    #[allow(clippy::cast_possible_truncation)]
     fn helper() {
         let i = black_box(0u32);
         if i >= 256 {
@@ -25,11 +26,8 @@ fn u32_assert_u8_inline(bench: &mut Bencher) {
 
 fn u32_try_u8(bench: &mut Bencher) {
     fn helper() {
-        match black_box(0u32).try_u8() {
-            Some(x) => {
-                black_box(x);
-            }
-            None => {}
+        if let Some(x) = black_box(0u32).try_u8() {
+            black_box(x);
         }
     }
     bench.iter(helper);
@@ -54,7 +52,7 @@ fn u8_u32(bench: &mut Bencher) {
 
 fn u8_u32_inline(bench: &mut Bencher) {
     fn helper() {
-        black_box(black_box(0u8) as u32);
+        black_box(u32::from(black_box(0u8)));
     }
     bench.iter(helper);
 }

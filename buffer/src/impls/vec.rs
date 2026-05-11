@@ -22,7 +22,7 @@ impl<'data> VecBuffer<'data> {
         let len = self.vec.len();
         let remaining = self.vec.capacity() - len;
         unsafe {
-            let start = self.vec.as_mut_ptr().offset(len as isize);
+            let start = self.vec.as_mut_ptr().add(len);
             // This is unsafe, we now have two unique (mutable) references to
             // the same `Vec`. However, we will only access `self.vec.len`
             // through `self` and only the contents through the `BufferRef`.
@@ -34,7 +34,7 @@ impl<'data> VecBuffer<'data> {
     }
 }
 
-impl<'data> Drop for VecBuffer<'data> {
+impl Drop for VecBuffer<'_> {
     fn drop(&mut self) {
         let len = self.vec.len();
         unsafe {

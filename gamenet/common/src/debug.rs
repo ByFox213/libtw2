@@ -10,8 +10,8 @@ pub struct DebugSlice<'a, T: Clone + 'a, D: fmt::Debug, F: Fn(T) -> D> {
 impl<'a, T: Clone + 'a, D: fmt::Debug, F: Fn(T) -> D> DebugSlice<'a, T, D, F> {
     pub fn new(slice: &'a [T], f: F) -> DebugSlice<'a, T, D, F> {
         DebugSlice {
-            slice: slice,
-            f: f,
+            slice,
+            f,
             phantom: PhantomData,
         }
     }

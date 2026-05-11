@@ -26,7 +26,7 @@ impl<'d, A: Array<Item = u8>> ArrayVecBuffer<'d, A> {
         let len = self.vec.len();
         let remaining = self.vec.capacity() - len;
         unsafe {
-            let start = self.vec.as_mut_ptr().offset(len as isize);
+            let start = self.vec.as_mut_ptr().add(len);
             // This is unsafe, we now have two unique (mutable) references
             // to the same `ArrayVec`. However, we will only access
             // `self.vec.len` through `self` and only the contents through
@@ -39,7 +39,7 @@ impl<'d, A: Array<Item = u8>> ArrayVecBuffer<'d, A> {
     }
 }
 
-impl<'d, A: Array<Item = u8>> Drop for ArrayVecBuffer<'d, A> {
+impl<A: Array<Item = u8>> Drop for ArrayVecBuffer<'_, A> {
     fn drop(&mut self) {
         let len = self.vec.len();
         unsafe {

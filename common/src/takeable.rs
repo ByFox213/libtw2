@@ -14,14 +14,23 @@ impl<T> Takeable<T> {
     pub fn new(value: T) -> Takeable<T> {
         Takeable { inner: Some(value) }
     }
+    #[must_use]
     pub fn empty() -> Takeable<T> {
         Takeable { inner: None }
     }
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value is absent.
     pub fn take(&mut self) -> T {
         self.inner
             .take()
             .unwrap_or_else(|| panic!("value taken when absent"))
     }
+    ///
+    /// # Panics
+    ///
+    /// Panics if a value is already present.
     pub fn restore(&mut self, value: T) {
         assert!(self.inner.is_none(), "value restored when already present");
         self.inner = Some(value);

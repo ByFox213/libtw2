@@ -1,39 +1,42 @@
 use arrayvec::ArrayVec;
 use std::ascii;
 use std::fmt;
-use std::mem;
 use std::ops;
 use std::str;
 
 pub struct AlmostString([u8]);
 
 impl AlmostString {
+    #[must_use]
     pub fn new(bytes: &[u8]) -> &AlmostString {
-        unsafe { mem::transmute(bytes) }
+        unsafe { &*(bytes as *const [u8] as *const AlmostString) }
     }
 }
 
 pub struct AlmostStringSlice<'a>([&'a [u8]]);
 
 impl<'a> AlmostStringSlice<'a> {
+    #[must_use]
     pub fn new<'b>(bytes_slice: &'b [&'a [u8]]) -> &'b AlmostStringSlice<'a> {
-        unsafe { mem::transmute(bytes_slice) }
+        unsafe { &*(bytes_slice as *const [&'a [u8]] as *const AlmostStringSlice<'a>) }
     }
 }
 
 pub struct Bytes([u8]);
 
 impl Bytes {
+    #[must_use]
     pub fn new(bytes: &[u8]) -> &Bytes {
-        unsafe { mem::transmute(bytes) }
+        unsafe { &*(bytes as *const [u8] as *const Bytes) }
     }
 }
 
 pub struct BytesSlice<'a>([&'a [u8]]);
 
 impl<'a> BytesSlice<'a> {
+    #[must_use]
     pub fn new<'b>(bytes_slice: &'b [&'a [u8]]) -> &'b BytesSlice<'a> {
-        unsafe { mem::transmute(bytes_slice) }
+        unsafe { &*(bytes_slice as *const [&'a [u8]] as *const BytesSlice<'a>) }
     }
 }
 
@@ -72,10 +75,10 @@ impl fmt::Debug for Bytes {
     }
 }
 
-impl<'a> fmt::Debug for BytesSlice<'a> {
+impl fmt::Debug for BytesSlice<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list()
-            .entries(self.0.iter().cloned().map(Bytes::new))
+            .entries(self.0.iter().copied().map(Bytes::new))
             .finish()
     }
 }
@@ -100,10 +103,10 @@ impl fmt::Display for AlmostString {
     }
 }
 
-impl<'a> fmt::Debug for AlmostStringSlice<'a> {
+impl fmt::Debug for AlmostStringSlice<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list()
-            .entries(self.0.iter().cloned().map(AlmostString::new))
+            .entries(self.0.iter().copied().map(AlmostString::new))
             .finish()
     }
 }

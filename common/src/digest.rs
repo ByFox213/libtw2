@@ -10,6 +10,11 @@ pub struct InvalidSliceLength;
 pub struct Sha256(pub [u8; 32]);
 
 impl Sha256 {
+    /// Create a digest from raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if `bytes.len() != 32`.
     pub fn from_slice(bytes: &[u8]) -> Result<Sha256, InvalidSliceLength> {
         let mut result = [0; 32];
         if bytes.len() != result.len() {
@@ -23,7 +28,7 @@ impl Sha256 {
 impl fmt::Debug for Sha256 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for &b in &self.0 {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
         Ok(())
     }
@@ -43,10 +48,9 @@ pub enum Sha256FromStrError {
 
 impl fmt::Display for Sha256FromStrError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Sha256FromStrError::*;
         match self {
-            InvalidLength(len) => write!(f, "invalid length {}, must be 64", len),
-            NonHexChar => "non-hex character".fmt(f),
+            Sha256FromStrError::InvalidLength(len) => write!(f, "invalid length {len}, must be 64"),
+            Sha256FromStrError::NonHexChar => "non-hex character".fmt(f),
         }
     }
 }
@@ -92,23 +96,24 @@ mod serialize {
         where
             S: serde::Serializer,
         {
-            serializer.serialize_str(&format!("{}", self))
+            serializer.serialize_str(&format!("{self}"))
         }
     }
 
     struct HexSha256Visitor;
 
-    impl<'de> serde::de::Visitor<'de> for HexSha256Visitor {
+    impl serde::de::Visitor<'_> for HexSha256Visitor {
         type Value = Sha256;
 
         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
             f.write_str("64 character hex value")
         }
         fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Sha256, E> {
-            use super::Sha256FromStrError::*;
             v.parse().map_err(|e| match e {
-                InvalidLength(len) => E::invalid_length(len, &self),
-                NonHexChar => E::invalid_value(serde::de::Unexpected::Str(v), &self),
+                super::Sha256FromStrError::InvalidLength(len) => E::invalid_length(len, &self),
+                super::Sha256FromStrError::NonHexChar => {
+                    E::invalid_value(serde::de::Unexpected::Str(v), &self)
+                }
             })
         }
     }

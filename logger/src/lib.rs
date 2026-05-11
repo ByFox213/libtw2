@@ -1,3 +1,7 @@
+/// Initialize logging.
+///
+/// This is best-effort for library consumers: if a logger is already installed,
+/// initialization is skipped.
 pub fn init() {
-    env_logger::init().unwrap();
+    let _ = env_logger::init();
 }

@@ -5,6 +5,7 @@ use std::io::Read;
 
 struct SeekOverflow(());
 
+#[must_use]
 pub fn seek_overflow() -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, SeekOverflow(()))
 }
@@ -24,6 +25,11 @@ impl fmt::Display for SeekOverflow {
 }
 
 pub trait ReadExt: Read {
+    /// Retry-reading into `buffer` until it is full or EOF is reached.
+    ///
+    /// # Errors
+    ///
+    /// Returns any I/O error other than `Interrupted`.
     fn read_retry(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
         let mut read = 0;
         while read != buffer.len() {
@@ -41,6 +47,11 @@ pub trait ReadExt: Read {
 impl<T: Read> ReadExt for T {}
 
 pub trait FileExt {
+    /// Retry-reading into `buffer` from `offset` until it is full or EOF is reached.
+    ///
+    /// # Errors
+    ///
+    /// Returns any underlying I/O error other than `Interrupted`.
     fn read_offset_retry(&self, buffer: &mut [u8], offset: u64) -> io::Result<usize>;
 }
 

@@ -13,7 +13,6 @@ use std::fs::File;
 use std::io;
 use std::io::BufReader;
 use std::io::Seek;
-use std::io::SeekFrom;
 use std::ops;
 use std::path::Path;
 
@@ -65,7 +64,9 @@ impl<T> ResultExt for Result<T, raw::Error> {
     fn retrieve(self, error: &mut Option<io::Error>) -> Result<T, Error> {
         self.map_err(|e| match e {
             raw::Error::Df(e) => Error::Df(e),
-            raw::Error::Callback => Error::Io(error.take().unwrap()),
+            raw::Error::Callback => Error::Io(error.take().unwrap_or_else(|| {
+                io::Error::new(io::ErrorKind::Other, "callback error without io error")
+            })),
         })
     }
 }
@@ -74,7 +75,7 @@ impl Reader {
     fn new_impl(file: File, check_initial_offset: bool) -> Result<Reader, Error> {
         let mut file = file;
         let datafile_start = if check_initial_offset {
-            file.seek(SeekFrom::Current(0))?
+            file.stream_position()?
         } else {
             0
         };
@@ -87,15 +88,18 @@ impl Reader {
         };
         let raw =
             raw::Reader::new(&mut callback_data_new).retrieve(&mut callback_data_new.error)?;
+        let seek_base = callback_data_new
+            .seek_base
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "missing seek base"))?;
         let callback_data = CallbackData {
             file: callback_data_new.file.into_inner(),
-            seek_base: callback_data_new.seek_base.unwrap(),
+            seek_base,
             buffer: None,
             error: None,
         };
         Ok(Reader {
-            callback_data: callback_data,
-            raw: raw,
+            callback_data,
+            raw,
         })
     }
     pub fn new(file: File) -> Result<Reader, Error> {
@@ -108,10 +112,9 @@ impl Reader {
         inner(path.as_ref())
     }
     pub fn debug_dump(&mut self) -> Result<(), Error> {
-        Ok(self
-            .raw
+        self.raw
             .debug_dump(&mut self.callback_data)
-            .retrieve(&mut self.callback_data.error)?)
+            .retrieve(&mut self.callback_data.error)
     }
     pub fn version(&self) -> raw::Version {
         self.raw.version()
@@ -120,7 +123,11 @@ impl Reader {
         self.raw
             .read_data(&mut self.callback_data, index)
             .retrieve(&mut self.callback_data.error)?;
-        Ok(self.callback_data.buffer.take().unwrap())
+        self.callback_data
+            .buffer
+            .take()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "missing data buffer"))
+            .map_err(Error::Io)
     }
     pub fn item(&self, index: usize) -> ItemView<'_> {
         self.raw.item(index)
@@ -189,13 +196,8 @@ impl CallbackNew for CallbackDataNew {
     fn ensure_filesize(&mut self, filesize: u32) -> Result<Result<(), ()>, CallbackError> {
         fn inner(self_: &mut CallbackDataNew, filesize: u32) -> io::Result<Result<(), ()>> {
             let actual = self_.file.get_ref().metadata()?.len();
-            Ok(
-                if actual.checked_sub(self_.datafile_start).unwrap() >= filesize.u64() {
-                    Ok(())
-                } else {
-                    Err(())
-                },
-            )
+            let remaining = actual.saturating_sub(self_.datafile_start);
+            Ok(if remaining >= filesize.u64() { Ok(()) } else { Err(()) })
         }
         inner(self, filesize).map_err(|e| {
             self.error = Some(e);
@@ -215,14 +217,12 @@ impl CallbackReadData for CallbackData {
         })
     }
     fn alloc_data_buffer(&mut self, length: usize) -> Result<(), CallbackError> {
-        let mut vec = Vec::with_capacity(length);
-        unsafe {
-            vec.set_len(length);
-        }
-        self.buffer = Some(vec);
+        self.buffer = Some(vec![0u8; length]);
         Ok(())
     }
     fn data_buffer(&mut self) -> &mut [u8] {
-        self.buffer.as_mut().unwrap()
+        self.buffer
+            .as_deref_mut()
+            .unwrap_or_else(|| panic!("data buffer requested before allocation"))
     }
 }

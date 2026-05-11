@@ -788,8 +788,8 @@ impl Reader {
             Some(g) => g,
             None => return Err(MapError::NoGameLayer),
         };
-        let (_, width, height) = group_index_width_height.unwrap();
-        let group = game_group.unwrap();
+        let (_, width, height) = group_index_width_height.ok_or(MapError::NoGameLayer)?;
+        let group = game_group.ok_or(MapError::NoGameLayer)?;
         Ok(GameLayers {
             group: group,
             width: width,

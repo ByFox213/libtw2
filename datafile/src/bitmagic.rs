@@ -85,13 +85,25 @@ impl<'a> CallbackNewExt for &'a mut dyn CallbackNew {
         &mut self,
         count: usize,
     ) -> Result<Vec<T>, CallbackReadError> {
-        let mut result = Vec::with_capacity(count);
-        // Safe because T: OnlyI32 is POD.
+        use std::mem;
+        use std::mem::MaybeUninit;
+        use std::slice;
+
+        let mut result: Vec<MaybeUninit<T>> = Vec::with_capacity(count);
+        // Safe: we will fully initialize the vector via `read_exact_le_i32s`
+        // before turning it into a `Vec<T>`.
         unsafe {
             result.set_len(count);
         }
-        self.read_exact_le_i32s(&mut result)?;
-        Ok(result)
+        let buf: &mut [T] =
+            unsafe { slice::from_raw_parts_mut(result.as_mut_ptr().cast::<T>(), count) };
+        self.read_exact_le_i32s(buf)?;
+
+        let ptr = result.as_mut_ptr().cast::<T>();
+        let len = result.len();
+        let cap = result.capacity();
+        mem::forget(result);
+        Ok(unsafe { Vec::from_raw_parts(ptr, len, cap) })
     }
 }
 
@@ -117,11 +129,7 @@ impl<'a> CallbackReadDataExt for &'a mut dyn CallbackReadData {
         offset: u32,
         count: usize,
     ) -> Result<Vec<u8>, CallbackReadError> {
-        let mut result = Vec::with_capacity(count);
-        // Safe because `u8` is POD.
-        unsafe {
-            result.set_len(count);
-        }
+        let mut result = vec![0u8; count];
         self.seek_read_exact(offset, &mut result)?;
         Ok(result)
     }

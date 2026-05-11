@@ -40,7 +40,7 @@ pub struct CapacityError;
 
 /// # Safety
 /// The caller must ensure that the lifetimes are valid.
-unsafe fn wildly_unsafe<'a, 'b>(slice: &'a mut [u8]) -> &'b mut [u8] {
+unsafe fn wildly_unsafe<'b>(slice: &mut [u8]) -> &'b mut [u8] {
     slice::from_raw_parts_mut(slice.as_mut_ptr(), slice.len())
 }
 
@@ -68,11 +68,14 @@ impl<'d, 's> BufferRef<'d, 's> {
 
     /// Advances the split of initialized/uninitialized data by `num_bytes` to
     /// the right.
+    ///
     /// # Safety
+    ///
     /// The caller must ensure the buffer is not accessed concurrently.
     ///
     /// # Panics
-    /// Panics if initialized + num_bytes > buffer length.
+    ///
+    /// Panics if `initialized + num_bytes > buffer length`.
     pub unsafe fn advance(&mut self, num_bytes: usize) {
         assert!(*self.initialized_ + num_bytes <= self.buffer.len());
         *self.initialized_ += num_bytes;
@@ -80,16 +83,15 @@ impl<'d, 's> BufferRef<'d, 's> {
 
     /// Writes the bytes yielded by the `bytes` iterator into the buffer.
     ///
-    ///
     /// # Errors
-    /// Returns CapacityError if the iterator yields more bytes than the buffer can contain.
-    /// If the iterator yields more bytes than the buffer can contain, a
-    /// `CapacityError` is returned.
+    ///
+    /// Returns `CapacityError` if the iterator yields more bytes than the
+    /// buffer can contain.
     pub fn extend<I>(&mut self, bytes: I) -> Result<(), CapacityError>
     where
         I: Iterator<Item = u8>,
     {
-        let mut buf_iter = (&mut self.buffer[*self.initialized_..]).iter_mut();
+        let mut buf_iter = self.buffer[*self.initialized_..].iter_mut();
         for b in bytes {
             *unwrap_or_return!(buf_iter.next(), Err(CapacityError)) = b;
             *self.initialized_ += 1;
@@ -101,6 +103,10 @@ impl<'d, 's> BufferRef<'d, 's> {
     ///
     /// If the slice contains more bytes than the buffer can contain, a
     /// `CapacityError` is returned.
+    ///
+    /// # Errors
+    ///
+    /// Returns `CapacityError` if `bytes.len()` exceeds the remaining capacity.
     pub fn write(&mut self, bytes: &[u8]) -> Result<(), CapacityError> {
         self.extend(bytes.iter().copied())
     }
@@ -114,11 +120,13 @@ impl<'d, 's> BufferRef<'d, 's> {
 
     /// Consumes the (mutable) buffer reference to produce a slice of the
     /// initialized data that is independent from the `BufferRef` instance.
+    #[must_use]
     pub fn initialized(self) -> &'d [u8] {
         &self.buffer[..*self.initialized_]
     }
 
     /// Returns the amount of uninitialized bytes that are left.
+    #[must_use]
     pub fn remaining(&self) -> usize {
         self.buffer.len() - *self.initialized_
     }

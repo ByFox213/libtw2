@@ -76,7 +76,7 @@ where
     }
 }
 
-impl<'a, WF, WT, W: Warn<WT>, F: FnMut(WF) -> WT> Warn<WF> for RevMap<'a, WF, WT, W, F> {
+impl<WF, WT, W: Warn<WT>, F: FnMut(WF) -> WT> Warn<WF> for RevMap<'_, WF, WT, W, F> {
     fn warn(&mut self, warning: WF) {
         self.warn.warn((self.fn_)(warning));
     }
@@ -90,12 +90,12 @@ pub struct Closure<W, F: FnMut(W)> {
 
 /// Applies a function to all warnings passed to this object.
 pub fn closure<W, F: FnMut(W)>(fn_: &mut F) -> &mut Closure<W, F> {
-    unsafe { &mut *(fn_ as *mut _ as *mut _) }
+    unsafe { &mut *(fn_ as *mut F).cast::<Closure<W, F>>() }
 }
 
 impl<W, F: FnMut(W)> Warn<W> for Closure<W, F> {
     fn warn(&mut self, warning: W) {
-        (self.fn_)(warning)
+        (self.fn_)(warning);
     }
 }
 
@@ -107,7 +107,7 @@ pub struct Wrap<WT, W: Warn<WT>> {
 
 /// Wraps a `Warn` struct so it can receive more warning types.
 pub fn wrap<WT, W: Warn<WT>>(warn: &mut W) -> &mut Wrap<WT, W> {
-    unsafe { &mut *(warn as *mut _ as *mut _) }
+    unsafe { &mut *(warn as *mut W).cast::<Wrap<WT, W>>() }
 }
 
 impl<WT, WF: Into<WT>, W: Warn<WT>> Warn<WF> for Wrap<WT, W> {

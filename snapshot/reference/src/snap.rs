@@ -27,11 +27,17 @@ impl Default for RawBuilder {
 
 impl RawBuilder {
     fn inner_builder_mut(&mut self) -> *mut libc::c_void {
-        self.builder.as_mut_ptr() as *mut _
+        self.builder.as_mut_ptr().cast::<libc::c_void>()
     }
+    #[must_use]
     pub fn new() -> RawBuilder {
-        Default::default()
+        RawBuilder::default()
     }
+    /// Add an item to the snapshot.
+    ///
+    /// # Errors
+    ///
+    /// This function never returns an error.
     pub fn add_item(&mut self, type_id: u16, id: u16, data: &[i32]) -> Result<(), Infallible> {
         unsafe {
             sys::snapshotbuilder_add_item(
@@ -44,10 +50,15 @@ impl RawBuilder {
         }
         Ok(())
     }
+    ///
+    /// # Panics
+    ///
+    /// Panics if internal serialization buffers are too small.
+    #[must_use]
     pub fn finish(mut self) -> RawSnap {
         const LEN: usize = 16384;
         assert!(self.serialized_snap.capacity() >= LEN);
-        let buffer = self.serialized_snap.as_mut_ptr() as *mut [i32; LEN];
+        let buffer = self.serialized_snap.as_mut_ptr().cast::<[i32; LEN]>();
         let written = unsafe { sys::snapshotbuilder_finish(self.inner_builder_mut(), buffer) };
         self.serialize_ok = usize::try_from(written)
             // TODO (MSRV 1.76): Use `.inspect()`
@@ -63,6 +74,12 @@ impl RawBuilder {
 pub struct RawSnap(RawBuilder);
 
 impl RawSnap {
+    /// Copy serialized snapshot ints into `result`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `CapacityError` if the snapshot didn't serialize cleanly, or if
+    /// `result` is too small.
     pub fn write_to_ints<'a>(
         &mut self,
         _buf: &mut Vec<i32>,
@@ -77,6 +94,7 @@ impl RawSnap {
         result[..self.0.serialized_snap.len()].copy_from_slice(&self.0.serialized_snap);
         Ok(&result[..self.0.serialized_snap.len()])
     }
+    #[must_use]
     pub fn recycle(self) -> RawBuilder {
         self.0
     }
@@ -103,15 +121,19 @@ impl Default for Delta {
 
 impl Delta {
     fn inner_delta_mut(&mut self) -> *mut libc::c_void {
-        self.builder.as_mut_ptr() as *mut _
+        self.builder.as_mut_ptr().cast::<libc::c_void>()
     }
+    #[must_use]
     pub fn new() -> Delta {
-        Default::default()
+        Delta::default()
     }
     #[allow(unpredictable_function_pointer_comparisons)] // only used for caching
     fn handle_obj_size(&mut self, obj_size: fn(u16) -> Option<u32>) {
-        if self.prev_obj_size.is_none() {
+        if self.prev_obj_size != Some(obj_size) {
             self.prev_obj_size = Some(obj_size);
+            unsafe {
+                sys::snapshotdelta_init(self.inner_delta_mut());
+            }
             for type_ in 0..32768 {
                 if let Some(size) = obj_size(type_) {
                     unsafe {
@@ -123,10 +145,14 @@ impl Delta {
                     }
                 }
             }
-        } else if self.prev_obj_size != Some(obj_size) {
-            panic!("can only be called with a single `obj_size` function");
         }
     }
+    /// Create a delta and write it into `result`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `CapacityError` if `result` is too small, or if snapshots failed
+    /// to serialize.
     pub fn create_raw_and_write_to_ints<'a>(
         &mut self,
         from: &RawSnap,
@@ -135,8 +161,9 @@ impl Delta {
         mut result: &'a mut [i32],
     ) -> Result<&'a [i32], CapacityError> {
         self.handle_obj_size(obj_size);
-        assert!(from.0.serialize_ok);
-        assert!(to.0.serialize_ok);
+        if !from.0.serialize_ok || !to.0.serialize_ok {
+            return Err(CapacityError);
+        }
         if result.len() > 16384 {
             result = &mut result[..16384];
         }
