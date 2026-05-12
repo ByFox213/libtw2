@@ -3,7 +3,7 @@
     clippy::items_after_statements,
     clippy::manual_assert,
     clippy::uninlined_format_args,
-    clippy::unwrap_used,
+    clippy::unwrap_used
 )]
 
 use clap::value_t;

@@ -29,7 +29,7 @@
     clippy::type_complexity,
     clippy::unreadable_literal,
     clippy::used_underscore_binding,
-    clippy::unwrap_used,
+    clippy::unwrap_used
 )]
 
 #[rustfmt::skip]

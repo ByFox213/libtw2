@@ -319,7 +319,9 @@ impl OnlineState {
             .resend_queue
             .iter()
             .position(|chunk| chunk.sequence == ack);
-        if let Some(i) = index { self.resend_queue.truncate(i); }
+        if let Some(i) = index {
+            self.resend_queue.truncate(i);
+        }
     }
     fn flush<CB: Callback>(
         &mut self,
@@ -639,7 +641,7 @@ impl Connection {
             })
     }
     pub fn tick<CB: Callback>(&mut self, cb: &mut CB) -> Result<(), CB::Error> {
-            let do_resend = match self.state {
+        let do_resend = match self.state {
             State::Online(ref online) => {
                 // WARN?
                 online
@@ -805,11 +807,7 @@ impl Connection {
 
 #[cfg(test)]
 mod test {
-    #![allow(
-        clippy::println_empty_string,
-        clippy::unwrap_used,
-        clippy::op_ref,
-    )]
+    #![allow(clippy::println_empty_string, clippy::unwrap_used, clippy::op_ref)]
     use super::Callback;
     use super::Connection;
     use super::ReceiveChunk;

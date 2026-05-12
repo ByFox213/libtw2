@@ -78,8 +78,9 @@ impl TuneParam {
 }
 #[allow(clippy::missing_errors_doc)]
 pub fn int_from_string(bytes: &[u8]) -> Result<i32, InvalidIntString> {
-    str::from_utf8(bytes)
-        .map_or(Err(InvalidIntString), |s| s.parse().map_err(|_| InvalidIntString))
+    str::from_utf8(bytes).map_or(Err(InvalidIntString), |s| {
+        s.parse().map_err(|_| InvalidIntString)
+    })
 }
 
 #[must_use]
@@ -191,7 +192,12 @@ impl SystemOrGame<MessageId, MessageId> {
             SystemOrGame::System(msg) | SystemOrGame::Game(msg) => msg,
         }
     }
-    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc, clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+    #[allow(
+        clippy::missing_errors_doc,
+        clippy::missing_panics_doc,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_wrap
+    )]
     pub fn encode_id<'d>(self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         let iid = match self.internal_id() {
             MessageId::Ordinal(i) => {

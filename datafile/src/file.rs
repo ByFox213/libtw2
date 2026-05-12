@@ -97,10 +97,7 @@ impl Reader {
             buffer: None,
             error: None,
         };
-        Ok(Reader {
-            callback_data,
-            raw,
-        })
+        Ok(Reader { callback_data, raw })
     }
     #[allow(clippy::missing_errors_doc)]
     pub fn new(file: File) -> Result<Reader, Error> {
@@ -213,7 +210,11 @@ impl CallbackNew for CallbackDataNew {
         fn inner(self_: &mut CallbackDataNew, filesize: u32) -> io::Result<Result<(), ()>> {
             let actual = self_.file.get_ref().metadata()?.len();
             let remaining = actual.saturating_sub(self_.datafile_start);
-            Ok(if remaining >= filesize.u64() { Ok(()) } else { Err(()) })
+            Ok(if remaining >= filesize.u64() {
+                Ok(())
+            } else {
+                Err(())
+            })
         }
         inner(self, filesize).map_err(|e| {
             self.error = Some(e);

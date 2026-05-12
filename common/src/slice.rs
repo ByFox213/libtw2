@@ -45,5 +45,8 @@ pub unsafe fn transmute<T, U>(x: &[T]) -> &[U] {
 /// alias any other references for the duration of its borrow.
 pub unsafe fn transmute_mut<T, U>(x: &mut [T]) -> &mut [U] {
     transmute::<T, U>(x); // For the error checking.
-    slice::from_raw_parts_mut(x.as_mut_ptr().cast::<U>(), relative_size_of_mult::<T, U>(x.len()))
+    slice::from_raw_parts_mut(
+        x.as_mut_ptr().cast::<U>(),
+        relative_size_of_mult::<T, U>(x.len()),
+    )
 }

@@ -1,5 +1,15 @@
 #![cfg(all(unix, not(target_os = "macos")))]
-#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc, clippy::must_use_candidate, clippy::cast_sign_loss, clippy::cast_possible_truncation, clippy::used_underscore_binding, clippy::ptr_as_ptr, clippy::unwrap_used, clippy::len_zero)]
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation,
+    clippy::used_underscore_binding,
+    clippy::ptr_as_ptr,
+    clippy::unwrap_used,
+    clippy::len_zero
+)]
 
 #[macro_use]
 extern crate log;

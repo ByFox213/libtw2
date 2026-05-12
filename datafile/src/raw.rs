@@ -321,12 +321,12 @@ impl Reader {
     pub fn version(&self) -> Version {
         self.version
     }
-    #[allow(clippy::missing_errors_doc, clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-    pub fn read_data(
-        &self,
-        mut cb: &mut dyn CallbackReadData,
-        index: usize,
-    ) -> Result<(), Error> {
+    #[allow(
+        clippy::missing_errors_doc,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
+    pub fn read_data(&self, mut cb: &mut dyn CallbackReadData, index: usize) -> Result<(), Error> {
         let raw_data_len = self.data_size_file(index);
         let raw_data = cb
             .seek_read_exact_owned(self.data_offsets[index] as u32, raw_data_len)
@@ -404,10 +404,15 @@ impl Reader {
 
     #[must_use]
     pub fn find_item(&self, type_id: u16, item_id: u16) -> Option<ItemView<'_>> {
-        self.item_type_items(type_id).find(|item| item.id == item_id)
+        self.item_type_items(type_id)
+            .find(|item| item.id == item_id)
     }
 
-    #[allow(clippy::missing_errors_doc, clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+    #[allow(
+        clippy::missing_errors_doc,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
     pub fn debug_dump(&self, cb: &mut dyn CallbackReadData) -> Result<(), Error> {
         if !log_enabled!(log::LogLevel::Debug) {
             return Ok(());

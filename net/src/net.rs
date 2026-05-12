@@ -575,10 +575,7 @@ impl<'a, A: Address + 'a, CB: Callback<A> + 'a> Iterator for Tick<'a, A, CB> {
 
 #[cfg(test)]
 mod test {
-    #![allow(
-        clippy::unwrap_used,
-        clippy::op_ref,
-    )]
+    #![allow(clippy::unwrap_used, clippy::op_ref)]
     use super::Callback;
     use super::ChunkOrEvent;
     use super::Net;

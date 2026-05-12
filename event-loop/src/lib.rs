@@ -20,7 +20,7 @@
     clippy::type_complexity,
     clippy::uninlined_format_args,
     clippy::unwrap_used,
-    clippy::used_underscore_binding,
+    clippy::used_underscore_binding
 )]
 
 #[macro_use]

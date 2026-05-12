@@ -29,7 +29,7 @@
     clippy::too_many_lines,
     clippy::type_complexity,
     clippy::unwrap_used,
-    clippy::used_underscore_binding,
+    clippy::used_underscore_binding
 )]
 
 #[macro_use]

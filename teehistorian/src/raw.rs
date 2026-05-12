@@ -314,10 +314,7 @@ impl Reader {
                 if self.players.insert(cid, pos).is_some() {
                     return Err(format::Error::PlayerNewDuplicate.into());
                 }
-                Item::PlayerNew(Player {
-                    cid: i.cid,
-                    pos,
-                })
+                Item::PlayerNew(Player { cid: i.cid, pos })
             }
             format::Item::PlayerOld(i) => {
                 self.prev_player_cid = Some(i.cid);
@@ -326,10 +323,7 @@ impl Reader {
                     .players
                     .remove(cid)
                     .ok_or(format::Error::PlayerOldWithoutNew)?;
-                Item::PlayerOld(Player {
-                    cid: i.cid,
-                    pos,
-                })
+                Item::PlayerOld(Player { cid: i.cid, pos })
             }
             format::Item::InputDiff(i) => {
                 let cid = i.cid.try_usize().ok_or(format::Error::InvalidClientId)?;

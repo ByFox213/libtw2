@@ -45,7 +45,7 @@
     clippy::unnecessary_wraps,
     clippy::unused_self,
     clippy::unwrap_used,
-    clippy::used_underscore_binding,
+    clippy::used_underscore_binding
 )]
 
 #[macro_use]

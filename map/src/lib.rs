@@ -32,7 +32,7 @@
     clippy::mem_replace_option_with_some,
     clippy::nonminimal_bool,
     clippy::pub_underscore_fields,
-    clippy::redundant_closure_for_method_calls,
+    clippy::redundant_closure_for_method_calls
 )]
 
 pub use self::reader::Error;

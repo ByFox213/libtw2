@@ -579,9 +579,7 @@ impl<'a> ConnectedPacket<'a> {
                 let mut compression_buffer: ArrayVec<[u8; 2048]> = ArrayVec::new();
                 let mut compression = 0;
                 let comp_result = HUFFMAN.compress(payload, &mut compression_buffer);
-                if comp_result
-                    .map_or(false, |s| s.len() < payload.len())
-                {
+                if comp_result.map_or(false, |s| s.len() < payload.len()) {
                     compression = PACKETFLAG_COMPRESSION;
                 }
                 let request_resend = if request_resend {

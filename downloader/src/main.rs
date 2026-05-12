@@ -23,7 +23,7 @@
     clippy::unnested_or_patterns,
     clippy::unreadable_literal,
     clippy::unwrap_used,
-    clippy::useless_conversion,
+    clippy::useless_conversion
 )]
 
 #[macro_use]

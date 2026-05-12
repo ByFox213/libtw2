@@ -207,7 +207,11 @@ impl HeaderVersion {
 }
 
 impl HeaderRest {
-    #[allow(clippy::missing_errors_doc, clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+    #[allow(
+        clippy::missing_errors_doc,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
     pub fn check(&self) -> Result<(), Error> {
         if self.size < 0 {
             error!("size is negative, size={}", self.size);

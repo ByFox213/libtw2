@@ -32,7 +32,7 @@
     clippy::redundant_else,
     clippy::redundant_pattern_matching,
     clippy::semicolon_if_nothing_returned,
-    clippy::single_match_else,
+    clippy::single_match_else
 )]
 
 use self::read_int::ReadInt;

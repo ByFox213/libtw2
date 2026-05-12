@@ -54,13 +54,7 @@ impl Reader {
     fn new_impl(file: File, buffer: &mut Buffer) -> Result<(Header<'_>, Reader), Error> {
         let mut callback_data = CallbackData { file };
         let (header, raw) = raw::Reader::new(&mut callback_data, buffer)?;
-        Ok((
-            header,
-            Reader {
-                callback_data,
-                raw,
-            },
-        ))
+        Ok((header, Reader { callback_data, raw }))
     }
     #[allow(clippy::missing_errors_doc)]
     pub fn new(file: File, buffer: &mut Buffer) -> Result<(Header<'_>, Reader), Error> {

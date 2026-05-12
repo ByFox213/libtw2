@@ -49,14 +49,11 @@ pub const INFO_6_EX_MORE: Header = b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffiex
 pub const CHALLENGE_6: Header = b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffchal";
 
 pub const TOKEN_7: &[u8; 8] = b"\x04\0\0\xff\xff\xff\xff\x05";
-pub const REQUEST_LIST_7: &[u8; 17] =
-    b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffreq2";
+pub const REQUEST_LIST_7: &[u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffreq2";
 pub const LIST_7: &[u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfflis2";
-pub const REQUEST_COUNT_7: &[u8; 17] =
-    b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffcou2";
+pub const REQUEST_COUNT_7: &[u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffcou2";
 pub const COUNT_7: &[u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffsiz2";
-pub const REQUEST_INFO_7: &[u8; 17] =
-    b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffgie3";
+pub const REQUEST_INFO_7: &[u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffgie3";
 pub const INFO_7: &[u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffinf3";
 
 pub const PACKETFLAG_CONNLESS: u8 = 1 << 6;
@@ -273,7 +270,9 @@ impl ServerInfoVersion {
     #[must_use]
     pub fn max_clients(self) -> Option<u32> {
         Some(match self {
-            ServerInfoVersion::V5 | ServerInfoVersion::V6 | ServerInfoVersion::V6Ddper => MAX_CLIENTS_5,
+            ServerInfoVersion::V5 | ServerInfoVersion::V6 | ServerInfoVersion::V6Ddper => {
+                MAX_CLIENTS_5
+            }
             ServerInfoVersion::V664 => MAX_CLIENTS_6_64,
             ServerInfoVersion::V6Ex => return None,
             ServerInfoVersion::V7 => MAX_CLIENTS_7,
@@ -284,7 +283,10 @@ impl ServerInfoVersion {
         Some(match self {
             ServerInfoVersion::V664 => 24,
             ServerInfoVersion::V6Ex => return None,
-            ServerInfoVersion::V5 | ServerInfoVersion::V6 | ServerInfoVersion::V6Ddper | ServerInfoVersion::V7 => 16,
+            ServerInfoVersion::V5
+            | ServerInfoVersion::V6
+            | ServerInfoVersion::V6Ddper
+            | ServerInfoVersion::V7 => 16,
         })
     }
     #[must_use]

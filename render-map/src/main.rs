@@ -291,26 +291,26 @@ where
                         let image = map.image(image_idx)?;
                         let height = image.height.usize();
                         let width = image.width.usize();
-        if let Some(d) = image.data {
-            let data = map.image_data(d)?;
-            if data.len() % mem::size_of::<Color>() != 0 {
-                return Err(OwnError::ImageShape.into());
-            }
-            let data: Vec<Color> = unsafe { vec::transmute(data) };
-            Array2::from_shape_vec((height, width), data)
-                .map_err(|_| OwnError::ImageShape)?
-        } else {
-            let image_name = map.image_name(image.name)?;
-            // WARN? Unknown external image
-            // WARN! Wrong dimensions
-            str::from_utf8(&image_name)
-                .ok()
-                .and_then(sanitize)
-                .map(&mut external_tileset_loader)
-                .transpose()?
-                .unwrap_or(None)
-                .unwrap_or_else(|| Array2::from_elem((1, 1), Color::white()))
-        }
+                        if let Some(d) = image.data {
+                            let data = map.image_data(d)?;
+                            if data.len() % mem::size_of::<Color>() != 0 {
+                                return Err(OwnError::ImageShape.into());
+                            }
+                            let data: Vec<Color> = unsafe { vec::transmute(data) };
+                            Array2::from_shape_vec((height, width), data)
+                                .map_err(|_| OwnError::ImageShape)?
+                        } else {
+                            let image_name = map.image_name(image.name)?;
+                            // WARN? Unknown external image
+                            // WARN! Wrong dimensions
+                            str::from_utf8(&image_name)
+                                .ok()
+                                .and_then(sanitize)
+                                .map(&mut external_tileset_loader)
+                                .transpose()?
+                                .unwrap_or(None)
+                                .unwrap_or_else(|| Array2::from_elem((1, 1), Color::white()))
+                        }
                     }
                 };
                 v.insert(normalize_tileset(data, tile_len));

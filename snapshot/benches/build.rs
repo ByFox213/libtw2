@@ -181,10 +181,7 @@ fn sort_items_by_key(mut items: Vec<Item>) -> Vec<Item> {
     items
 }
 
-fn add_items_libtw2_sorted(
-    builder: &mut libtw2_snapshot::snap::RawBuilderSorted,
-    items: &[Item],
-) {
+fn add_items_libtw2_sorted(builder: &mut libtw2_snapshot::snap::RawBuilderSorted, items: &[Item]) {
     for &Item {
         type_id,
         id,

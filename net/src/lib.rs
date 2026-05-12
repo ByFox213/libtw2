@@ -31,7 +31,7 @@
     clippy::unnecessary_wraps,
     clippy::nonminimal_bool,
     clippy::unnecessary_cast,
-    clippy::while_let_on_iterator,
+    clippy::while_let_on_iterator
 )]
 
 pub mod collections;

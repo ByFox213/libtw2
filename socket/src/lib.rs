@@ -2,7 +2,7 @@
     clippy::missing_errors_doc,
     clippy::missing_panics_doc,
     clippy::items_after_statements,
-    clippy::elidable_lifetime_names,
+    clippy::elidable_lifetime_names
 )]
 
 #[macro_use]
@@ -224,13 +224,23 @@ impl Socket {
         {
             let buf_slice = unsafe { buf.uninitialized_mut() };
             if result.is_none() && self.check_v6 {
-                if let Some(r) = non_block(self.v6.as_ref().unwrap_or_else(|| unreachable!()).recv_from(buf_slice)) {
+                if let Some(r) = non_block(
+                    self.v6
+                        .as_ref()
+                        .unwrap_or_else(|| unreachable!())
+                        .recv_from(buf_slice),
+                ) {
                     result = Some(r);
                     self.check_v6 = false;
                 }
             }
             if result.is_none() && self.check_v4 {
-                if let Some(r) = non_block(self.v4.as_ref().unwrap_or_else(|| unreachable!()).recv_from(buf_slice)) {
+                if let Some(r) = non_block(
+                    self.v4
+                        .as_ref()
+                        .unwrap_or_else(|| unreachable!())
+                        .recv_from(buf_slice),
+                ) {
                     result = Some(r);
                     self.check_v4 = false;
                 }

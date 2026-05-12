@@ -16,7 +16,7 @@
     clippy::range_plus_one,
     clippy::redundant_field_names,
     clippy::return_self_not_must_use,
-    clippy::too_many_lines,
+    clippy::too_many_lines
 )]
 
 use libtw2_common::num::Cast;

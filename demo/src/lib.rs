@@ -15,7 +15,7 @@
     clippy::semicolon_if_nothing_returned,
     clippy::too_many_arguments,
     clippy::unnecessary_wraps,
-    clippy::unwrap_used,
+    clippy::unwrap_used
 )]
 
 pub mod ddnet;

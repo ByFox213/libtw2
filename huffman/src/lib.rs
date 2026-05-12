@@ -415,9 +415,10 @@ impl Huffman {
         let mut result = Vec::with_capacity(input.len() * 8);
         match self.decompress(input, &mut result) {
             Ok(_) => {}
-            Err(DecompressionError::InvalidInput | DecompressionError::Capacity(buffer::CapacityError)) => {
-                return Err(InvalidInput)
-            }
+            Err(
+                DecompressionError::InvalidInput
+                | DecompressionError::Capacity(buffer::CapacityError),
+            ) => return Err(InvalidInput),
         }
         result.shrink_to_fit();
         Ok(result)

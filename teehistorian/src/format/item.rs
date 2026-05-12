@@ -496,8 +496,7 @@ impl<'a> Item<'a> {
             UUID_TEAM_PRACTICE => TeamPractice::decode(&mut Unpacker::new(data))?.into(),
             UUID_TEAM_SAVE_FAILURE => TeamSaveFailure::decode(&mut Unpacker::new(data))?.into(),
             UUID_TEAM_SAVE_SUCCESS => TeamSaveSuccess::decode(&mut Unpacker::new(data))?.into(),
-            _ => UnknownEx { uuid, data }
-            .into(),
+            _ => UnknownEx { uuid, data }.into(),
         })
     }
     #[must_use]
@@ -505,9 +504,16 @@ impl<'a> Item<'a> {
     pub fn cid(&self) -> Option<i32> {
         Some(match *self {
             Item::PlayerDiff(ref i) => i.cid,
-            Item::Finish(_) | Item::TickSkip(_) | Item::Antibot(_) | Item::PlayerSwap(_)
-            | Item::TeamFinish(_) | Item::TeamLoadFailure(_) | Item::TeamLoadSuccess(_)
-            | Item::TeamPractice(_) | Item::TeamSaveFailure(_) | Item::TeamSaveSuccess(_)
+            Item::Finish(_)
+            | Item::TickSkip(_)
+            | Item::Antibot(_)
+            | Item::PlayerSwap(_)
+            | Item::TeamFinish(_)
+            | Item::TeamLoadFailure(_)
+            | Item::TeamLoadSuccess(_)
+            | Item::TeamPractice(_)
+            | Item::TeamSaveFailure(_)
+            | Item::TeamSaveSuccess(_)
             | Item::UnknownEx(_) => return None,
             Item::PlayerNew(ref i) => i.cid,
             Item::PlayerOld(ref i) => i.cid,
@@ -664,7 +670,12 @@ impl<'a> ConsoleCommand<'a> {
             args.try_push(p.read_string()?)
                 .map_err(|_| Error::NumArgsTooLarge)?;
         }
-        Ok(ConsoleCommand { cid, flag_mask, cmd, args })
+        Ok(ConsoleCommand {
+            cid,
+            flag_mask,
+            cmd,
+            args,
+        })
     }
 }
 
@@ -968,7 +979,10 @@ impl fmt::Debug for Ddnetver<'_> {
             .field("cid", &self.cid)
             .field("connection_id", &self.connection_id)
             .field("ddnet_version", &self.ddnet_version)
-            .field("ddnet_version_str", &pretty::AlmostString::new(self.ddnet_version_str))
+            .field(
+                "ddnet_version_str",
+                &pretty::AlmostString::new(self.ddnet_version_str),
+            )
             .finish()
     }
 }

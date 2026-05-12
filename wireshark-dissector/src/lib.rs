@@ -44,7 +44,7 @@
     clippy::uninlined_format_args,
     clippy::unnecessary_semicolon,
     clippy::unnecessary_trailing_comma,
-    clippy::used_underscore_items,
+    clippy::used_underscore_items
 )]
 
 extern crate libtw2_wireshark_dissector_sys as sys;
