@@ -97,6 +97,7 @@ pub struct HeaderCheckResult {
 }
 
 impl Header {
+    #[allow(clippy::missing_errors_doc)]
     pub fn read(mut cb: &mut dyn CallbackNew) -> Result<Header, raw::Error> {
         let mut result: Header = unsafe { mem::zeroed() };
         let read = cb.read_le_i32s(slice::from_mut(&mut result))?;
@@ -118,6 +119,7 @@ impl Header {
         debug!("read header={:?}", result);
         Ok(result)
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn check_size_and_swaplen(&self) -> Result<HeaderCheckResult, Error> {
         let expected_total_size = self.calculate_total_size()?;
         let expected_size0 = self.calculate_size_field(expected_total_size, false);
@@ -184,14 +186,15 @@ impl Header {
 }
 
 impl HeaderVersion {
+    #[allow(clippy::missing_errors_doc)]
     pub fn check(&self) -> Result<(), Error> {
         Err(if self.magic != MAGIC && self.magic != MAGIC_BIGENDIAN {
             error!(
                 "wrong datafile signature, magic={:08x}",
-                ((self.magic[0] as u32) << 24)
-                    | ((self.magic[1] as u32) << 16)
-                    | ((self.magic[2] as u32) << 8)
-                    | (self.magic[3] as u32)
+                ((u32::from(self.magic[0])) << 24)
+                    | ((u32::from(self.magic[1])) << 16)
+                    | ((u32::from(self.magic[2])) << 8)
+                    | (u32::from(self.magic[3]))
             );
             Error::WrongMagic(self.magic)
         } else if self.version != VERSION3 && self.version != VERSION4 {
@@ -204,6 +207,7 @@ impl HeaderVersion {
 }
 
 impl HeaderRest {
+    #[allow(clippy::missing_errors_doc, clippy::cast_sign_loss, clippy::cast_possible_truncation)]
     pub fn check(&self) -> Result<(), Error> {
         if self.size < 0 {
             error!("size is negative, size={}", self.size);
@@ -236,21 +240,27 @@ impl HeaderRest {
 }
 
 impl ItemHeader {
+    #[must_use]
     pub fn new(type_id: u16, id: u16, size: i32) -> ItemHeader {
         let mut result = ItemHeader {
             type_id_and_id: 0,
-            size: size,
+            size,
         };
         result.set_type_id_and_id(type_id, id);
         result
     }
+    #[must_use]
+    #[allow(clippy::cast_sign_loss)]
     pub fn type_id(&self) -> u16 {
         (((self.type_id_and_id as u32) >> 16) & 0xffff) as u16
     }
+    #[must_use]
+    #[allow(clippy::cast_sign_loss)]
     pub fn id(&self) -> u16 {
         ((self.type_id_and_id as u32) & 0xffff) as u16
     }
+    #[allow(clippy::cast_possible_wrap)]
     pub fn set_type_id_and_id(&mut self, type_id: u16, id: u16) {
-        self.type_id_and_id = (((type_id as u32) << 16) | (id as u32)) as i32;
+        self.type_id_and_id = ((u32::from(type_id) << 16) | u32::from(id)) as i32;
     }
 }

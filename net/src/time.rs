@@ -16,22 +16,28 @@ impl Default for Timestamp {
 }
 
 impl Timestamp {
+    #[must_use]
     pub fn sentinel() -> Timestamp {
         optional::Noned::get_none()
     }
+    #[allow(clippy::unwrap_used)]
+    #[must_use]
     pub fn from_secs_since_epoch(secs: u64) -> Timestamp {
         Timestamp {
             usec: secs.checked_mul(1_000_000).unwrap(),
         }
     }
+    #[must_use]
     pub fn from_usecs_since_epoch(usecs: u64) -> Timestamp {
         Timestamp { usec: usecs }
     }
+    #[must_use]
     pub fn as_usecs_since_epoch(&self) -> u64 {
         self.usec
     }
 }
 
+#[allow(clippy::unwrap_used)]
 impl ops::Add<Duration> for Timestamp {
     type Output = Timestamp;
     fn add(self, duration: Duration) -> Timestamp {
@@ -80,22 +86,27 @@ pub struct Timeout {
 }
 
 impl Timeout {
+    #[must_use]
     pub fn active(timestamp: Timestamp) -> Timeout {
         Timeout {
             timeout: Optioned::some(timestamp),
         }
     }
+    #[must_use]
     pub fn inactive() -> Timeout {
         Timeout {
             timeout: Optioned::none(),
         }
     }
+    #[must_use]
     pub fn is_active(&self) -> bool {
         self.timeout.is_some()
     }
+    #[must_use]
     pub fn to_opt(self) -> Option<Timestamp> {
         self.timeout.into()
     }
+    #[must_use]
     pub fn time_from(self, time: Timestamp) -> Option<Duration> {
         self.to_opt().map(|t| {
             if t > time {

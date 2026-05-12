@@ -8,9 +8,9 @@ pub trait CallbackExt: Callback {
     fn read_buffer<'d, B: Buffer<'d>>(&mut self, buf: B) -> Result<Option<&'d [u8]>, Self::Error> {
         with_buffer(buf, |buf| self.read_buffer_ref(buf))
     }
-    fn read_buffer_ref<'d, 's>(
+    fn read_buffer_ref<'d>(
         &mut self,
-        mut buf: BufferRef<'d, 's>,
+        mut buf: BufferRef<'d, '_>,
     ) -> Result<Option<&'d [u8]>, Self::Error> {
         unsafe {
             let read = unwrap_or_return!(self.read_at_most(buf.uninitialized_mut())?, Ok(None));

@@ -220,7 +220,7 @@ impl<'a> ChunksIter<'a> {
     where
         W: Warn<Warning>,
     {
-        if self.data.len() == 0 {
+        if self.data.is_empty() {
             if !self.checked_num_chunks_warning {
                 self.checked_num_chunks_warning = true;
                 if self.num_remaining_chunks != 0 {
@@ -379,8 +379,7 @@ impl<'a> Packet<'a> {
 
         assert!(buffer
             .as_ref()
-            .map(|b| b.remaining() >= MAX_PACKETSIZE)
-            .unwrap_or(true));
+            .map_or(true, |b| b.remaining() >= MAX_PACKETSIZE));
         if bytes.len() > MAX_PACKETSIZE {
             return Err(TooLong);
         }
@@ -412,10 +411,15 @@ impl<'a> Packet<'a> {
         }
 
         let payload = if header.flags & PACKETFLAG_COMPRESSION != 0 {
-            let mut buffer =
-                buffer.expect("read_panic_on_decompression called on compressed packet");
+            let mut buffer = {
+                #[allow(clippy::expect_used)]
+                buffer.expect("read_panic_on_decompression called on compressed packet")
+            };
             let decompressed = Packet::decompress(bytes, &mut buffer).map_err(|_| Compression)?;
-            let (_, payload) = PacketHeaderPacked::ref_and_rest_from(decompressed).unwrap();
+            let (_, payload) = {
+                #[allow(clippy::unwrap_used)]
+                PacketHeaderPacked::ref_and_rest_from(decompressed).unwrap()
+            };
             payload
         } else {
             payload
@@ -469,7 +473,7 @@ impl<'a> Packet<'a> {
                         .position(|&b| b == 0)
                         .unwrap_or(payload.len());
                     let nul = cmp::min(nul, CTRLMSG_CLOSE_REASON_LENGTH);
-                    if payload.len() != 0 && nul + 1 != payload.len() {
+                    if !payload.is_empty() && nul + 1 != payload.len() {
                         if nul + 1 < payload.len() {
                             warn.warn(Warning::ControlExcessData);
                         } else {
@@ -536,6 +540,7 @@ impl<'a> Packet<'a> {
     ) -> Result<&'d [u8], libtw2_huffman::DecompressionError> {
         assert!(buffer.remaining() >= MAX_PACKETSIZE);
         assert!(Packet::needs_decompression(packet));
+        #[allow(clippy::expect_used)]
         let (header, payload) = PacketHeaderPacked::ref_and_rest_from(packet)
             .expect("packet passed to decompress too short for header");
         let header = header.unpack_warn(&mut Ignore);
@@ -548,6 +553,7 @@ impl<'a> Packet<'a> {
             num_chunks: header.num_chunks,
             token: header.token,
         };
+        #[allow(clippy::unwrap_used)]
         buffer.write(fake_header.pack().as_bytes()).unwrap();
         HUFFMAN.decompress(payload, &mut buffer)?;
 
@@ -574,8 +580,7 @@ impl<'a> ConnectedPacket<'a> {
                 let mut compression = 0;
                 let comp_result = HUFFMAN.compress(payload, &mut compression_buffer);
                 if comp_result
-                    .map(|s| s.len() < payload.len())
-                    .unwrap_or(false)
+                    .map_or(false, |s| s.len() < payload.len())
                 {
                     compression = PACKETFLAG_COMPRESSION;
                 }
@@ -771,7 +776,7 @@ impl PacketHeaderConnless {
         assert!(flags >> PACKET_FLAGS_BITS == 0);
         assert!(version >> VERSION_BITS == 0);
         PacketHeaderConnlessPacked {
-            padding_flags_version: flags << 2 | version as u8,
+            padding_flags_version: flags << 2 | version,
             token: token.0,
             response_token: response_token.0,
         }
@@ -915,6 +920,12 @@ boilerplate_packed!(
 #[cfg(test)]
 #[rustfmt::skip]
 mod test {
+    #![allow(
+        clippy::unwrap_used,
+        clippy::op_ref,
+        clippy::redundant_pattern_matching,
+        clippy::needless_pass_by_value,
+    )]
     use libtw2_common::bytes::FromBytesExt as _;
     use libtw2_warn::Panic;
     use libtw2_warn::Warn;

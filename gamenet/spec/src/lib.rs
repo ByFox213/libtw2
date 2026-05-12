@@ -169,9 +169,11 @@ fn capitalize_first(s: &str) -> String {
     result
 }
 impl Identifier {
+    #[must_use]
     pub fn snake(&self) -> String {
         self.parts.join("_")
     }
+    #[must_use]
     pub fn desc(&self) -> String {
         capitalize_first(&self.parts.join(" "))
     }

@@ -61,6 +61,7 @@ const EOF: u16 = 256;
 #[doc(hidden)]
 pub const NUM_SYMBOLS: u16 = EOF + 1;
 const NUM_NODES: usize = NUM_SYMBOLS as usize * 2 - 1;
+#[allow(clippy::cast_possible_truncation)]
 const ROOT_IDX: u16 = NUM_NODES as u16 - 1;
 #[doc(hidden)]
 pub const NUM_FREQUENCIES: usize = 256;
@@ -83,6 +84,7 @@ pub enum DecompressionError {
 
 impl fmt::Display for DecompressionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #[allow(clippy::enum_glob_use)]
         use self::DecompressionError::*;
         match self {
             Capacity(_) => "output buffer too small",
@@ -135,7 +137,7 @@ impl<'a> IntoIterator for Repr<'a> {
     }
 }
 
-impl<'a> Iterator for ReprIter<'a> {
+impl Iterator for ReprIter<'_> {
     type Item = SymbolRepr;
     fn next(&mut self) -> Option<SymbolRepr> {
         self.iter.next().map(|n| n.to_symbol_repr())
@@ -145,13 +147,13 @@ impl<'a> Iterator for ReprIter<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for ReprIter<'a> {
+impl ExactSizeIterator for ReprIter<'_> {
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<'a> DoubleEndedIterator for ReprIter<'a> {
+impl DoubleEndedIterator for ReprIter<'_> {
     fn next_back(&mut self) -> Option<SymbolRepr> {
         self.iter.next_back().map(|n| n.to_symbol_repr())
     }
@@ -200,15 +202,19 @@ struct Frequency {
 }
 
 impl Huffman {
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn from_frequencies(frequencies: &[u32]) -> Huffman {
         assert!(frequencies.len() == 256);
-        let array = unsafe { &*(frequencies as *const _ as *const _) };
+        let array = unsafe { &*frequencies.as_ptr().cast::<[u32; 256]>() };
         Huffman::from_frequencies_array(array)
     }
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn from_frequencies_array(frequencies: &[u32; 256]) -> Huffman {
         let mut frequencies: ArrayVec<[_; 512]> = frequencies
             .iter()
-            .cloned()
+            .copied()
             .enumerate()
             .map(|(i, f)| Frequency {
                 frequency: f,
@@ -288,7 +294,7 @@ impl Huffman {
         let mut result = Huffman {
             nodes: [NODE_SENTINEL; NUM_NODES],
         };
-        assert!(result.nodes.iter_mut().set_from(nodes.iter().cloned()) == NUM_NODES);
+        assert!(result.nodes.iter_mut().set_from(nodes.iter().copied()) == NUM_NODES);
         result
     }
     fn compressed_bit_len(&self, input: &[u8]) -> usize {
@@ -298,6 +304,8 @@ impl Huffman {
             .fold(0, |s, a| s + a.usize())
             + self.symbol_bit_length(EOF).usize()
     }
+    #[allow(clippy::missing_errors_doc)]
+    #[must_use]
     pub fn compressed_len(&self, input: &[u8]) -> usize {
         (self.compressed_bit_len(input) + 7) / 8
     }
@@ -306,9 +314,11 @@ impl Huffman {
     ///
     /// This might differ by 1 from `compressed_len` in case the compressed bit
     /// stream would perfectly fit into bytes.
+    #[must_use]
     pub fn compressed_len_bug(&self, input: &[u8]) -> usize {
         self.compressed_bit_len(input) / 8 + 1
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn compress<'a, B: Buffer<'a>>(
         &self,
         input: &[u8],
@@ -316,6 +326,8 @@ impl Huffman {
     ) -> Result<&'a [u8], buffer::CapacityError> {
         with_buffer(buffer, |b| self.compress_impl(input, b, false))
     }
+    #[allow(clippy::missing_errors_doc)]
+    #[must_use]
     pub fn compress_into_vec(&self, input: &[u8]) -> Vec<u8> {
         // At most 3 bytes per symbol, i.e. input byte. Plus EOF symbol.
         let mut result = Vec::with_capacity(input.len() * 3 + 3);
@@ -326,6 +338,7 @@ impl Huffman {
         result.shrink_to_fit();
         result
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn compress_bug<'a, B: Buffer<'a>>(
         &self,
         input: &[u8],
@@ -333,10 +346,10 @@ impl Huffman {
     ) -> Result<&'a [u8], buffer::CapacityError> {
         with_buffer(buffer, |b| self.compress_impl(input, b, true))
     }
-    fn compress_impl<'d, 's>(
+    fn compress_impl<'d>(
         &self,
         input: &[u8],
-        mut buffer: BufferRef<'d, 's>,
+        mut buffer: BufferRef<'d, '_>,
         bug: bool,
     ) -> Result<&'d [u8], buffer::CapacityError> {
         unsafe {
@@ -347,6 +360,7 @@ impl Huffman {
             Ok(buffer.initialized())
         }
     }
+    #[allow(clippy::cast_possible_truncation)]
     fn compress_impl_unsafe(
         &self,
         input: &[u8],
@@ -387,6 +401,7 @@ impl Huffman {
         Ok(len)
     }
 
+    #[allow(clippy::missing_errors_doc)]
     pub fn decompress<'a, B: Buffer<'a>>(
         &self,
         input: &[u8],
@@ -394,23 +409,23 @@ impl Huffman {
     ) -> Result<&'a [u8], DecompressionError> {
         with_buffer(buffer, |b| self.decompress_impl(input, b))
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn decompress_into_vec(&self, input: &[u8]) -> Result<Vec<u8>, InvalidInput> {
         // At most one output byte per input bit.
         let mut result = Vec::with_capacity(input.len() * 8);
         match self.decompress(input, &mut result) {
             Ok(_) => {}
-            Err(DecompressionError::InvalidInput) => return Err(InvalidInput),
-            // If the buffer does not suffice, it means we have a runaway
-            // decompression.
-            Err(DecompressionError::Capacity(buffer::CapacityError)) => return Err(InvalidInput),
+            Err(DecompressionError::InvalidInput | DecompressionError::Capacity(buffer::CapacityError)) => {
+                return Err(InvalidInput)
+            }
         }
         result.shrink_to_fit();
         Ok(result)
     }
-    fn decompress_impl<'d, 's>(
+    fn decompress_impl<'d>(
         &self,
         input: &[u8],
-        mut buffer: BufferRef<'d, 's>,
+        mut buffer: BufferRef<'d, '_>,
     ) -> Result<&'d [u8], DecompressionError> {
         unsafe {
             let len = self
@@ -433,7 +448,7 @@ impl Huffman {
             'outer: loop {
                 let &byte = input.next().unwrap_or(&0);
                 for bit in Bits::new(byte) {
-                    let new_idx = node.children[bit as usize];
+                    let new_idx = node.children[usize::from(bit)];
                     if let Ok(n) = self.get_node(new_idx) {
                         node = n;
                     } else {
@@ -463,6 +478,7 @@ impl Huffman {
             Err(n.to_symbol_repr())
         }
     }
+    #[must_use]
     pub fn repr(&self) -> Repr<'_> {
         Repr {
             repr: &self.nodes[..NUM_SYMBOLS.usize()],
@@ -487,25 +503,29 @@ const NODE_SENTINEL: Node = Node { children: [!0, !0] };
 impl Node {
     fn to_symbol_repr(self) -> SymbolRepr {
         SymbolRepr {
-            bits: ((self.children[0] & 0xff) as u32) << 16 | self.children[1] as u32,
+            bits: u32::from(self.children[0] & 0xff) << 16 | u32::from(self.children[1]),
             num_bits: (self.children[0] >> 8) as u8,
         }
     }
 }
 
 impl SymbolRepr {
+    #[allow(clippy::cast_possible_truncation)]
     fn to_node(self) -> Node {
         assert!(self.bits >> 24 == 0);
         Node {
             children: [
-                (self.num_bits as u16) << 8 | (self.bits >> 16) as u16,
+                (u16::from(self.num_bits)) << 8 | (self.bits >> 16) as u16,
                 self.bits as u16,
             ],
         }
     }
+    #[must_use]
     pub fn num_bits(self) -> u32 {
         self.num_bits.u32()
     }
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn bit(self, idx: u32) -> bool {
         assert!(idx < self.num_bits());
         ((self.bits >> idx) & 1) != 0

@@ -1,3 +1,10 @@
+#![allow(
+    clippy::elidable_lifetime_names,
+    clippy::missing_errors_doc,
+    clippy::used_underscore_binding,
+    clippy::needless_borrow
+)]
+
 use libtw2_buffer::CapacityError;
 use libtw2_common::pretty;
 use libtw2_gamenet_common::error::Error;

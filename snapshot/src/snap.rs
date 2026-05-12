@@ -1395,6 +1395,13 @@ impl<'a> Iterator for DeltaChunks<'a> {
 
 #[cfg(test)]
 mod test {
+    #![allow(
+        clippy::redundant_static_lifetimes,
+        clippy::unreadable_literal,
+        clippy::unwrap_used,
+        clippy::match_same_arms
+    )]
+
     use super::Builder;
     use super::Delta;
     use super::Error;

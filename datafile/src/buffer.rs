@@ -29,6 +29,7 @@ pub type ItemTypes<'a> = MapIterator<u16, &'a Buffer, ops::Range<usize>>;
 pub type ItemTypeItems<'a> = MapIterator<ItemView<'a>, &'a Buffer, ops::Range<usize>>;
 
 impl Buffer {
+    #[must_use]
     pub fn new() -> Buffer {
         Buffer {
             item_types: Vec::new(),
@@ -53,13 +54,7 @@ impl Buffer {
         item_type_found: bool,
         id: u16,
     ) -> (usize, bool) {
-        if !item_type_found {
-            if item_type_index != self.item_types.len() {
-                (self.item_types[item_type_index].start, false)
-            } else {
-                (self.items.len(), false)
-            }
-        } else {
+        if item_type_found {
             let ItemType { start, num, .. } = self.item_types[item_type_index];
 
             for (i, &Item { id: other_id, .. }) in self.items[start..][..num]
@@ -73,42 +68,50 @@ impl Buffer {
             }
 
             (start + num, false)
+        } else if item_type_index == self.item_types.len() {
+            (self.items.len(), false)
+        } else {
+            (self.item_types[item_type_index].start, false)
         }
     }
 
+    #[must_use]
+    #[allow(clippy::missing_panics_doc)]
     pub fn item_type(&self, index: usize) -> u16 {
         self.item_types
             .get(index)
             .unwrap_or_else(|| panic!("Invalid type index"))
             .type_id
     }
+    #[must_use]
     pub fn num_item_types(&self) -> usize {
         self.item_types.len()
     }
 
-    pub fn item<'a>(&'a self, index: usize) -> ItemView<'a> {
+    #[must_use]
+    pub fn item(&self, index: usize) -> ItemView<'_> {
         let Item {
             type_id,
             id,
             ref data,
         } = self.items[index];
-        ItemView {
-            type_id: type_id,
-            id: id,
-            data: data,
-        }
+        ItemView { type_id, id, data }
     }
+    #[must_use]
     pub fn num_items(&self) -> usize {
         self.items.len()
     }
 
+    #[must_use]
     pub fn data(&self, index: usize) -> &[u8] {
         &self.data[index]
     }
+    #[must_use]
     pub fn num_data(&self) -> usize {
         self.data.len()
     }
 
+    #[must_use]
     pub fn item_type_indices(&self, type_id: u16) -> ops::Range<usize> {
         let (type_index, type_found) = self.get_item_type_index(type_id);
         if !type_found {
@@ -126,7 +129,7 @@ impl Buffer {
     }
 
     pub fn item_types(&self) -> ItemTypes<'_> {
-        fn map_fn<'a>(i: usize, &mut self_: &mut &'a Buffer) -> u16 {
+        fn map_fn(i: usize, &mut self_: &mut &Buffer) -> u16 {
             self_.item_type(i)
         }
         MapIterator::new(self, 0..self.num_item_types(), map_fn)
@@ -146,6 +149,7 @@ impl Buffer {
         MapIterator::new(self, 0..self.num_data(), map_fn)
     }
 
+    #[allow(clippy::missing_errors_doc, clippy::result_unit_err)]
     pub fn add_item(&mut self, type_id: u16, id: u16, data: &[i32]) -> Result<(), ()> {
         let (type_index, type_found) = self.get_item_type_index(type_id);
         let (item_index, item_found) = self.get_item_index(type_index, type_found, id);
@@ -161,7 +165,7 @@ impl Buffer {
             self.item_types.insert(
                 type_index,
                 ItemType {
-                    type_id: type_id,
+                    type_id,
                     start: item_index,
                     num: 0,
                 },
@@ -180,8 +184,8 @@ impl Buffer {
         self.items.insert(
             item_index,
             Item {
-                type_id: type_id,
-                id: id,
+                type_id,
+                id,
                 data: data.to_vec(),
             },
         );

@@ -50,38 +50,45 @@ pub struct Reader {
 }
 
 impl Reader {
-    fn new_impl<'a>(file: File, buffer: &'a mut Buffer) -> Result<(Header<'a>, Reader), Error> {
-        let mut callback_data = CallbackData { file: file };
+    #[allow(clippy::missing_errors_doc)]
+    fn new_impl(file: File, buffer: &mut Buffer) -> Result<(Header<'_>, Reader), Error> {
+        let mut callback_data = CallbackData { file };
         let (header, raw) = raw::Reader::new(&mut callback_data, buffer)?;
         Ok((
             header,
             Reader {
-                callback_data: callback_data,
-                raw: raw,
+                callback_data,
+                raw,
             },
         ))
     }
-    pub fn new<'a>(file: File, buffer: &'a mut Buffer) -> Result<(Header<'a>, Reader), Error> {
+    #[allow(clippy::missing_errors_doc)]
+    pub fn new(file: File, buffer: &mut Buffer) -> Result<(Header<'_>, Reader), Error> {
         Reader::new_impl(file, buffer)
     }
-    pub fn open<'a, P: AsRef<Path>>(
+    #[allow(clippy::missing_errors_doc)]
+    pub fn open<P: AsRef<Path>>(
         path: P,
-        buffer: &'a mut Buffer,
-    ) -> Result<(Header<'a>, Reader), Error> {
+        buffer: &mut Buffer,
+    ) -> Result<(Header<'_>, Reader), Error> {
         fn inner<'a>(path: &Path, buffer: &'a mut Buffer) -> Result<(Header<'a>, Reader), Error> {
             Reader::new_impl(File::open(path)?, buffer)
         }
         inner(path.as_ref(), buffer)
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn read<'a>(&mut self, buffer: &'a mut Buffer) -> Result<Option<Item<'a>>, Error> {
         Ok(self.raw.read(&mut self.callback_data, buffer)?)
     }
+    #[must_use]
     pub fn player_pos(&self, cid: i32) -> Option<Pos> {
         self.raw.player_pos(cid)
     }
+    #[must_use]
     pub fn input(&self, cid: i32) -> Option<[i32; INPUT_LEN]> {
         self.raw.input(cid)
     }
+    #[must_use]
     pub fn cids(&self) -> ops::Range<i32> {
         self.raw.cids()
     }

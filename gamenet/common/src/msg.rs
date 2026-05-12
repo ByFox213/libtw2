@@ -24,10 +24,12 @@ pub struct ClientsData<'a> {
     inner: &'a [u8],
 }
 
-impl<'a> ClientsData<'a> {
+impl ClientsData<'_> {
+    #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> ClientsData<'_> {
         ClientsData { inner: bytes }
     }
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         self.inner
     }
@@ -63,22 +65,28 @@ impl AddrPackedSliceExt for [AddrPacked] {
 pub struct TuneParam(pub i32);
 
 impl TuneParam {
+    #[allow(clippy::cast_possible_truncation)]
+    #[must_use]
     pub fn from_float(float: f32) -> TuneParam {
         TuneParam((float * 100.0) as i32)
     }
+    #[allow(clippy::cast_precision_loss)]
+    #[must_use]
     pub fn to_float(self) -> f32 {
         (self.0 as f32) / 100.0
     }
 }
+#[allow(clippy::missing_errors_doc)]
 pub fn int_from_string(bytes: &[u8]) -> Result<i32, InvalidIntString> {
     str::from_utf8(bytes)
-        .map(|s| s.parse().map_err(|_| InvalidIntString))
-        .unwrap_or(Err(InvalidIntString))
+        .map_or(Err(InvalidIntString), |s| s.parse().map_err(|_| InvalidIntString))
 }
 
+#[must_use]
+#[allow(clippy::unwrap_used)]
 pub fn string_from_int(int: i32) -> ArrayVec<[u8; 16]> {
     let mut result = ArrayVec::new();
-    write!(&mut result, "{}", int).unwrap();
+    write!(&mut result, "{int}").unwrap();
     result
 }
 
@@ -119,6 +127,7 @@ impl From<Uuid> for MessageId {
 pub trait Protocol<'a> {
     type System;
     type Game;
+    #[allow(clippy::missing_errors_doc)]
     fn decode_system<W>(
         warn: &mut W,
         id: MessageId,
@@ -126,6 +135,7 @@ pub trait Protocol<'a> {
     ) -> Result<Self::System, Error>
     where
         W: Warn<Warning>;
+    #[allow(clippy::missing_errors_doc)]
     fn decode_game<W>(
         warn: &mut W,
         id: MessageId,
@@ -154,9 +164,10 @@ impl<S, G> SystemOrGame<S, G> {
 }
 
 impl SystemOrGame<MessageId, MessageId> {
-    pub fn decode_id<'a, W>(
+    #[allow(clippy::missing_errors_doc)]
+    pub fn decode_id<W>(
         warn: &mut W,
-        p: &mut Unpacker<'a>,
+        p: &mut Unpacker<'_>,
     ) -> Result<SystemOrGame<MessageId, MessageId>, Error>
     where
         W: Warn<Warning>,
@@ -177,11 +188,11 @@ impl SystemOrGame<MessageId, MessageId> {
     }
     fn internal_id(self) -> MessageId {
         match self {
-            SystemOrGame::System(msg) => msg,
-            SystemOrGame::Game(msg) => msg,
+            SystemOrGame::System(msg) | SystemOrGame::Game(msg) => msg,
         }
     }
-    pub fn encode_id<'d, 's>(self, mut p: Packer<'d, 's>) -> Result<&'d [u8], CapacityError> {
+    #[allow(clippy::missing_errors_doc, clippy::missing_panics_doc, clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+    pub fn encode_id<'d>(self, mut p: Packer<'d, '_>) -> Result<&'d [u8], CapacityError> {
         let iid = match self.internal_id() {
             MessageId::Ordinal(i) => {
                 assert!(i != 0);
@@ -190,7 +201,7 @@ impl SystemOrGame<MessageId, MessageId> {
             MessageId::Uuid(_) => 0,
         };
         assert!((iid & (1 << 31)) == 0);
-        let flag = self.is_system() as u32;
+        let flag = u32::from(self.is_system());
         p.write_int(((iid << 1) | flag) as i32)?;
         if let MessageId::Uuid(u) = self.internal_id() {
             p.write_uuid(u)?;
@@ -199,6 +210,7 @@ impl SystemOrGame<MessageId, MessageId> {
     }
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn decode<'a, W, P>(
     warn: &mut W,
     _proto: P,

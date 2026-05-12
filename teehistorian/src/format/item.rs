@@ -152,6 +152,7 @@ impl From<MaybeEnd<UnknownType>> for MaybeEnd<Error> {
 }
 
 impl Kind {
+    #[allow(clippy::missing_errors_doc)]
     pub fn decode(p: &mut Unpacker, version: Version) -> Result<Kind, MaybeEnd<UnknownType>> {
         Ok(match p.read_int(&mut Ignore)? {
             i if i >= 0 => Kind::PlayerDiff(i),
@@ -169,6 +170,7 @@ impl Kind {
             x => return Err(UnknownType(x).into()),
         })
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn decode_rest<'a>(&self, p: &mut Unpacker<'a>) -> Result<Item<'a>, MaybeEnd<Error>> {
         Ok(match *self {
             Kind::PlayerDiff(cid) => PlayerDiff::decode(cid, p)?.into(),
@@ -185,11 +187,10 @@ impl Kind {
             Kind::Ex => Item::decode_ex(p)?,
         })
     }
+    #[must_use]
     pub fn player_cid(&self) -> Option<i32> {
         Some(match *self {
-            Kind::PlayerDiff(cid) => cid,
-            Kind::PlayerNew(cid) => cid,
-            Kind::PlayerOld(cid) => cid,
+            Kind::PlayerDiff(cid) | Kind::PlayerNew(cid) | Kind::PlayerOld(cid) => cid,
             _ => return None,
         })
     }
@@ -216,6 +217,7 @@ where
 #[derive(Clone, Serialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
+#[allow(clippy::large_enum_variant)]
 pub enum Item<'a> {
     PlayerDiff(PlayerDiff),
     Finish(Finish),
@@ -465,9 +467,11 @@ impl From<Error> for MaybeEnd<Error> {
 }
 
 impl<'a> Item<'a> {
+    #[allow(clippy::missing_errors_doc)]
     pub fn decode(p: &mut Unpacker<'a>, version: Version) -> Result<Item<'a>, MaybeEnd<Error>> {
         Kind::decode(p, version)?.decode_rest(p)
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn decode_ex(p: &mut Unpacker<'a>) -> Result<Item<'a>, MaybeEnd<Error>> {
         let uuid = p.read_uuid()?;
         let data = p.read_data(&mut Ignore)?;
@@ -492,18 +496,19 @@ impl<'a> Item<'a> {
             UUID_TEAM_PRACTICE => TeamPractice::decode(&mut Unpacker::new(data))?.into(),
             UUID_TEAM_SAVE_FAILURE => TeamSaveFailure::decode(&mut Unpacker::new(data))?.into(),
             UUID_TEAM_SAVE_SUCCESS => TeamSaveSuccess::decode(&mut Unpacker::new(data))?.into(),
-            _ => UnknownEx {
-                uuid: uuid,
-                data: data,
-            }
+            _ => UnknownEx { uuid, data }
             .into(),
         })
     }
+    #[must_use]
+    #[allow(clippy::match_same_arms)]
     pub fn cid(&self) -> Option<i32> {
         Some(match *self {
             Item::PlayerDiff(ref i) => i.cid,
-            Item::Finish(_) => return None,
-            Item::TickSkip(_) => return None,
+            Item::Finish(_) | Item::TickSkip(_) | Item::Antibot(_) | Item::PlayerSwap(_)
+            | Item::TeamFinish(_) | Item::TeamLoadFailure(_) | Item::TeamLoadSuccess(_)
+            | Item::TeamPractice(_) | Item::TeamSaveFailure(_) | Item::TeamSaveSuccess(_)
+            | Item::UnknownEx(_) => return None,
             Item::PlayerNew(ref i) => i.cid,
             Item::PlayerOld(ref i) => i.cid,
             Item::InputDiff(ref i) => i.cid,
@@ -512,7 +517,6 @@ impl<'a> Item<'a> {
             Item::Join(ref i) => i.cid,
             Item::Drop(ref i) => i.cid,
             Item::ConsoleCommand(ref i) => i.cid,
-            Item::Antibot(_) => return None,
             Item::AuthInit(ref i) => i.cid,
             Item::AuthLogin(ref i) => i.cid,
             Item::AuthLogout(ref i) => i.cid,
@@ -524,326 +528,345 @@ impl<'a> Item<'a> {
             Item::PlayerFinish(ref i) => i.cid,
             Item::PlayerReady(ref i) => i.cid,
             Item::PlayerRejoin(ref i) => i.cid,
-            Item::PlayerSwap(_) => return None,
             Item::PlayerTeam(ref i) => i.cid,
-            Item::TeamFinish(_) => return None,
-            Item::TeamLoadFailure(_) => return None,
-            Item::TeamLoadSuccess(_) => return None,
-            Item::TeamPractice(_) => return None,
-            Item::TeamSaveFailure(_) => return None,
-            Item::TeamSaveSuccess(_) => return None,
-            Item::UnknownEx(_) => return None,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl PlayerDiff {
-    fn decode(cid: i32, _p: &mut Unpacker) -> Result<PlayerDiff, MaybeEnd<Error>> {
+    fn decode(cid: i32, p: &mut Unpacker) -> Result<PlayerDiff, MaybeEnd<Error>> {
         Ok(PlayerDiff {
-            cid: cid,
-            dx: _p.read_int(&mut Ignore)?,
-            dy: _p.read_int(&mut Ignore)?,
+            cid,
+            dx: p.read_int(&mut Ignore)?,
+            dy: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss, clippy::unnecessary_wraps)]
 impl Finish {
-    fn decode(_p: &mut Unpacker) -> Result<Finish, MaybeEnd<Error>> {
+    fn decode(_: &mut Unpacker) -> Result<Finish, MaybeEnd<Error>> {
         Ok(Finish)
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl TickSkip {
-    fn decode(_p: &mut Unpacker) -> Result<TickSkip, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<TickSkip, MaybeEnd<Error>> {
         Ok(TickSkip {
-            dt: positive(_p.read_int(&mut Ignore)?)
+            dt: positive(p.read_int(&mut Ignore)?)
                 .map_err(|_| Error::NegativeDt)?
                 .assert_u32(),
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl PlayerNew {
-    fn decode(cid: i32, _p: &mut Unpacker) -> Result<PlayerNew, MaybeEnd<Error>> {
+    fn decode(cid: i32, p: &mut Unpacker) -> Result<PlayerNew, MaybeEnd<Error>> {
         Ok(PlayerNew {
-            cid: cid,
-            x: _p.read_int(&mut Ignore)?,
-            y: _p.read_int(&mut Ignore)?,
+            cid,
+            x: p.read_int(&mut Ignore)?,
+            y: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss, clippy::unnecessary_wraps)]
 impl PlayerOld {
-    fn decode(cid: i32, _p: &mut Unpacker) -> Result<PlayerOld, MaybeEnd<Error>> {
-        Ok(PlayerOld { cid: cid })
+    fn decode(cid: i32, _: &mut Unpacker) -> Result<PlayerOld, MaybeEnd<Error>> {
+        Ok(PlayerOld { cid })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl InputDiff {
-    fn decode(_p: &mut Unpacker) -> Result<InputDiff, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<InputDiff, MaybeEnd<Error>> {
         Ok(InputDiff {
-            cid: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
             diff: [
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
             ],
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl InputNew {
-    fn decode(_p: &mut Unpacker) -> Result<InputNew, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<InputNew, MaybeEnd<Error>> {
         Ok(InputNew {
-            cid: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
             new: [
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
-                _p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
+                p.read_int(&mut Ignore)?,
             ],
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> Message<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<Message<'a>, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker<'a>) -> Result<Message<'a>, MaybeEnd<Error>> {
         Ok(Message {
-            cid: _p.read_int(&mut Ignore)?,
-            msg: _p.read_data(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
+            msg: p.read_data(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl Join {
-    fn decode(_p: &mut Unpacker) -> Result<Join, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<Join, MaybeEnd<Error>> {
         Ok(Join {
-            cid: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> Drop<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<Drop<'a>, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker<'a>) -> Result<Drop<'a>, MaybeEnd<Error>> {
         Ok(Drop {
-            cid: _p.read_int(&mut Ignore)?,
-            reason: _p.read_string()?,
+            cid: p.read_int(&mut Ignore)?,
+            reason: p.read_string()?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> ConsoleCommand<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<ConsoleCommand<'a>, MaybeEnd<Error>> {
-        let cid = _p.read_int(&mut Ignore)?;
-        let flag_mask = _p.read_int(&mut Ignore)? as u32;
-        let cmd = _p.read_string()?;
-        let num_args = positive(_p.read_int(&mut Ignore)?).map_err(|_| Error::NegativeNumArgs)?;
+    fn decode(p: &mut Unpacker<'a>) -> Result<ConsoleCommand<'a>, MaybeEnd<Error>> {
+        let cid = p.read_int(&mut Ignore)?;
+        #[allow(clippy::cast_sign_loss)]
+        let flag_mask = p.read_int(&mut Ignore)? as u32;
+        let cmd = p.read_string()?;
+        let num_args = positive(p.read_int(&mut Ignore)?).map_err(|_| Error::NegativeNumArgs)?;
         let mut args = ArrayVec::new();
         for _ in 0..num_args {
-            args.try_push(_p.read_string()?)
+            args.try_push(p.read_string()?)
                 .map_err(|_| Error::NumArgsTooLarge)?;
         }
-        Ok(ConsoleCommand {
-            cid: cid,
-            flag_mask: flag_mask,
-            cmd: cmd,
-            args: args,
-        })
+        Ok(ConsoleCommand { cid, flag_mask, cmd, args })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> Antibot<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<Antibot<'a>, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker<'a>) -> Result<Antibot<'a>, MaybeEnd<Error>> {
         Ok(Antibot {
-            data: _p.read_rest()?,
+            data: p.read_rest()?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> AuthInit<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<AuthInit<'a>, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker<'a>) -> Result<AuthInit<'a>, MaybeEnd<Error>> {
         Ok(AuthInit {
-            cid: _p.read_int(&mut Ignore)?,
-            level: _p.read_int(&mut Ignore)?,
-            identity: _p.read_string()?,
+            cid: p.read_int(&mut Ignore)?,
+            level: p.read_int(&mut Ignore)?,
+            identity: p.read_string()?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> AuthLogin<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<AuthLogin<'a>, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker<'a>) -> Result<AuthLogin<'a>, MaybeEnd<Error>> {
         Ok(AuthLogin {
-            cid: _p.read_int(&mut Ignore)?,
-            level: _p.read_int(&mut Ignore)?,
-            identity: _p.read_string()?,
+            cid: p.read_int(&mut Ignore)?,
+            level: p.read_int(&mut Ignore)?,
+            identity: p.read_string()?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl AuthLogout {
-    fn decode(_p: &mut Unpacker) -> Result<AuthLogout, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<AuthLogout, MaybeEnd<Error>> {
         Ok(AuthLogout {
-            cid: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> Ddnetver<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<Ddnetver<'a>, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker<'a>) -> Result<Ddnetver<'a>, MaybeEnd<Error>> {
         Ok(Ddnetver {
-            cid: _p.read_int(&mut Ignore)?,
-            connection_id: _p.read_uuid()?,
-            ddnet_version: _p.read_int(&mut Ignore)?,
-            ddnet_version_str: _p.read_string()?,
+            cid: p.read_int(&mut Ignore)?,
+            connection_id: p.read_uuid()?,
+            ddnet_version: p.read_int(&mut Ignore)?,
+            ddnet_version_str: p.read_string()?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl DdnetverOld {
-    fn decode(_p: &mut Unpacker) -> Result<DdnetverOld, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<DdnetverOld, MaybeEnd<Error>> {
         Ok(DdnetverOld {
-            cid: _p.read_int(&mut Ignore)?,
-            ddnet_version: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
+            ddnet_version: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl Joinver6 {
-    fn decode(_p: &mut Unpacker) -> Result<Joinver6, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<Joinver6, MaybeEnd<Error>> {
         Ok(Joinver6 {
-            cid: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl Joinver7 {
-    fn decode(_p: &mut Unpacker) -> Result<Joinver7, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<Joinver7, MaybeEnd<Error>> {
         Ok(Joinver7 {
-            cid: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl PlayerFinish {
-    fn decode(_p: &mut Unpacker) -> Result<PlayerFinish, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<PlayerFinish, MaybeEnd<Error>> {
         Ok(PlayerFinish {
-            cid: _p.read_int(&mut Ignore)?,
-            time_ticks: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
+            time_ticks: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> PlayerName<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<PlayerName<'a>, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker<'a>) -> Result<PlayerName<'a>, MaybeEnd<Error>> {
         Ok(PlayerName {
-            cid: _p.read_int(&mut Ignore)?,
-            name: _p.read_string()?,
+            cid: p.read_int(&mut Ignore)?,
+            name: p.read_string()?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl PlayerReady {
-    fn decode(_p: &mut Unpacker) -> Result<PlayerReady, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<PlayerReady, MaybeEnd<Error>> {
         Ok(PlayerReady {
-            cid: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl PlayerRejoin {
-    fn decode(_p: &mut Unpacker) -> Result<PlayerRejoin, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<PlayerRejoin, MaybeEnd<Error>> {
         Ok(PlayerRejoin {
-            cid: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl PlayerSwap {
-    fn decode(_p: &mut Unpacker) -> Result<PlayerSwap, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<PlayerSwap, MaybeEnd<Error>> {
         Ok(PlayerSwap {
-            cid1: _p.read_int(&mut Ignore)?,
-            cid2: _p.read_int(&mut Ignore)?,
+            cid1: p.read_int(&mut Ignore)?,
+            cid2: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl PlayerTeam {
-    fn decode(_p: &mut Unpacker) -> Result<PlayerTeam, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<PlayerTeam, MaybeEnd<Error>> {
         Ok(PlayerTeam {
-            cid: _p.read_int(&mut Ignore)?,
-            team: _p.read_int(&mut Ignore)?,
+            cid: p.read_int(&mut Ignore)?,
+            team: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl TeamFinish {
-    fn decode(_p: &mut Unpacker) -> Result<TeamFinish, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<TeamFinish, MaybeEnd<Error>> {
         Ok(TeamFinish {
-            team: _p.read_int(&mut Ignore)?,
-            time_ticks: _p.read_int(&mut Ignore)?,
+            team: p.read_int(&mut Ignore)?,
+            time_ticks: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl TeamLoadFailure {
-    fn decode(_p: &mut Unpacker) -> Result<TeamLoadFailure, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<TeamLoadFailure, MaybeEnd<Error>> {
         Ok(TeamLoadFailure {
-            team: _p.read_int(&mut Ignore)?,
+            team: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> TeamLoadSuccess<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<TeamLoadSuccess<'a>, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker<'a>) -> Result<TeamLoadSuccess<'a>, MaybeEnd<Error>> {
         Ok(TeamLoadSuccess {
-            team: _p.read_int(&mut Ignore)?,
-            save_uuid: _p.read_uuid()?,
-            save: _p.read_string()?,
+            team: p.read_int(&mut Ignore)?,
+            save_uuid: p.read_uuid()?,
+            save: p.read_string()?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl TeamPractice {
-    fn decode(_p: &mut Unpacker) -> Result<TeamPractice, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<TeamPractice, MaybeEnd<Error>> {
         Ok(TeamPractice {
-            team: _p.read_int(&mut Ignore)?,
-            practice: _p.read_int(&mut Ignore)?,
+            team: p.read_int(&mut Ignore)?,
+            practice: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl TeamSaveFailure {
-    fn decode(_p: &mut Unpacker) -> Result<TeamSaveFailure, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker) -> Result<TeamSaveFailure, MaybeEnd<Error>> {
         Ok(TeamSaveFailure {
-            team: _p.read_int(&mut Ignore)?,
+            team: p.read_int(&mut Ignore)?,
         })
     }
 }
 
+#[allow(clippy::cast_sign_loss)]
 impl<'a> TeamSaveSuccess<'a> {
-    fn decode(_p: &mut Unpacker<'a>) -> Result<TeamSaveSuccess<'a>, MaybeEnd<Error>> {
+    fn decode(p: &mut Unpacker<'a>) -> Result<TeamSaveSuccess<'a>, MaybeEnd<Error>> {
         Ok(TeamSaveSuccess {
-            team: _p.read_int(&mut Ignore)?,
-            save_uuid: _p.read_uuid()?,
-            save: _p.read_string()?,
+            team: p.read_int(&mut Ignore)?,
+            save_uuid: p.read_uuid()?,
+            save: p.read_string()?,
         })
     }
 }
 
-impl<'a> fmt::Debug for Item<'a> {
+impl fmt::Debug for Item<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Item::PlayerDiff(ref i) => i.fmt(f),
@@ -882,111 +905,108 @@ impl<'a> fmt::Debug for Item<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Message<'a> {
+impl fmt::Debug for Message<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Message")
             .field("cid", &self.cid)
-            .field("msg", &pretty::Bytes::new(&self.msg))
+            .field("msg", &pretty::Bytes::new(self.msg))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for Drop<'a> {
+impl fmt::Debug for Drop<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Drop")
             .field("cid", &self.cid)
-            .field("reason", &pretty::AlmostString::new(&self.reason))
+            .field("reason", &pretty::AlmostString::new(self.reason))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for ConsoleCommand<'a> {
+impl fmt::Debug for ConsoleCommand<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ConsoleCommand")
             .field("cid", &self.cid)
             .field("flag_mask", &self.flag_mask)
-            .field("cmd", &pretty::AlmostString::new(&self.cmd))
+            .field("cmd", &pretty::AlmostString::new(self.cmd))
             .field("args", &pretty::AlmostStringSlice::new(&self.args))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for Antibot<'a> {
+impl fmt::Debug for Antibot<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Antibot")
-            .field("data", &pretty::Bytes::new(&self.data))
+            .field("data", &pretty::Bytes::new(self.data))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for AuthInit<'a> {
+impl fmt::Debug for AuthInit<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("AuthInit")
             .field("cid", &self.cid)
             .field("level", &self.level)
-            .field("identity", &pretty::AlmostString::new(&self.identity))
+            .field("identity", &pretty::AlmostString::new(self.identity))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for AuthLogin<'a> {
+impl fmt::Debug for AuthLogin<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("AuthLogin")
             .field("cid", &self.cid)
             .field("level", &self.level)
-            .field("identity", &pretty::AlmostString::new(&self.identity))
+            .field("identity", &pretty::AlmostString::new(self.identity))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for Ddnetver<'a> {
+impl fmt::Debug for Ddnetver<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Ddnetver")
             .field("cid", &self.cid)
             .field("connection_id", &self.connection_id)
             .field("ddnet_version", &self.ddnet_version)
-            .field(
-                "ddnet_version_str",
-                &pretty::AlmostString::new(&self.ddnet_version_str),
-            )
+            .field("ddnet_version_str", &pretty::AlmostString::new(self.ddnet_version_str))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for PlayerName<'a> {
+impl fmt::Debug for PlayerName<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("PlayerName")
             .field("cid", &self.cid)
-            .field("name", &pretty::AlmostString::new(&self.name))
+            .field("name", &pretty::AlmostString::new(self.name))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for TeamLoadSuccess<'a> {
+impl fmt::Debug for TeamLoadSuccess<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("TeamLoadSuccess")
             .field("team", &self.team)
             .field("save_uuid", &self.save_uuid)
-            .field("save", &pretty::AlmostString::new(&self.save))
+            .field("save", &pretty::AlmostString::new(self.save))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for TeamSaveSuccess<'a> {
+impl fmt::Debug for TeamSaveSuccess<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("TeamSaveSuccess")
             .field("team", &self.team)
             .field("save_uuid", &self.save_uuid)
-            .field("save", &pretty::AlmostString::new(&self.save))
+            .field("save", &pretty::AlmostString::new(self.save))
             .finish()
     }
 }
 
-impl<'a> fmt::Debug for UnknownEx<'a> {
+impl fmt::Debug for UnknownEx<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("UnknownEx")
             .field("uuid", &self.uuid)
-            .field("data", &pretty::Bytes::new(&self.data))
+            .field("data", &pretty::Bytes::new(self.data))
             .finish()
     }
 }

@@ -1,3 +1,10 @@
+#![allow(
+    clippy::redundant_static_lifetimes,
+    clippy::unreadable_literal,
+    clippy::unwrap_used,
+    clippy::uninlined_format_args
+)]
+
 use libtw2_buffer::CapacityError;
 use libtw2_gamenet::snap_obj::obj_size;
 use libtw2_packer::with_packer;

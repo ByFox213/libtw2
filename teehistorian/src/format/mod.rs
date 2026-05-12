@@ -89,6 +89,7 @@ impl From<WrongMagic> for MaybeEnd<WrongMagic> {
     }
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn read_magic(p: &mut Unpacker) -> Result<(), MaybeEnd<WrongMagic>> {
     let magic = p.read_raw(MAGIC_LEN)?;
     if magic != UUID {
@@ -110,6 +111,8 @@ struct JsonHeader<'a> {
     config: HashMap<Cow<'a, str>, Cow<'a, str>>,
 }
 
+#[allow(clippy::missing_errors_doc)]
+#[allow(clippy::enum_glob_use)]
 pub fn read_header<'a>(p: &mut Unpacker<'a>) -> Result<Header<'a>, MaybeEnd<HeaderError>> {
     use self::HeaderError::*;
     let header_data = p.read_string()?;
@@ -122,7 +125,7 @@ pub fn read_header<'a>(p: &mut Unpacker<'a>) -> Result<Header<'a>, MaybeEnd<Head
     })?;
     let version = json_header.version.parse().map_err(|_| MalformedVersion)?;
     let header = Header {
-        version: version,
+        version,
         game_uuid: json_header
             .game_uuid
             .parse()

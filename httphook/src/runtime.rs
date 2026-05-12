@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used)]
+
 use libtw2_polyfill_1_63::OnceLock;
 use std::future;
 use std::future::Future;
@@ -19,5 +21,5 @@ pub fn spawn<F: Future<Output = ()> + Send + 'static>(future: F) {
             handle
         })
     }
-    let _ = handle().spawn(future);
+    std::mem::drop(handle().spawn(future));
 }

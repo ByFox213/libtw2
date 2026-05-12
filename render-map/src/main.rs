@@ -1,4 +1,13 @@
 #![cfg(not(test))]
+#![allow(
+    clippy::similar_names,
+    clippy::needless_pass_by_value,
+    clippy::unwrap_used,
+    clippy::uninlined_format_args,
+    clippy::legacy_numeric_constants,
+    clippy::missing_panics_doc,
+    clippy::doc_markdown
+)]
 
 use clap::value_t;
 use clap::values_t;
@@ -26,6 +35,11 @@ use std::path::Path;
 use std::process;
 use std::str;
 
+#[allow(clippy::needless_return)]
+fn is_empty_rect(r: &Rect) -> bool {
+    r.min_y >= r.max_y || r.min_x >= r.max_x
+}
+
 // TODO: Skip empty tiles (i.e. don't count tiles that have index != 0, but are
 //       graphically empty.
 
@@ -47,7 +61,7 @@ impl Rect {
     }
 
     fn is_empty(&self) -> bool {
-        return self.min_y >= self.max_y || self.min_x >= self.max_x;
+        is_empty_rect(self)
     }
 }
 
@@ -130,7 +144,7 @@ struct Layer {
 
 const TILE_NUM: u32 = 16;
 
-/// Scales `tileset` to `tile_len` * TILE_NUM pixels, clears first (air) tile.
+/// Scales `tileset` to `tile_len` * `TILE_NUM` pixels, clears first (air) tile.
 fn normalize_tileset(tileset: Array2<Color>, tile_len: u32) -> Array2<Color> {
     let dim = tileset.dim();
     let height = dim.0.assert_u32();
@@ -186,10 +200,10 @@ fn normalize_tileset(tileset: Array2<Color>, tile_len: u32) -> Array2<Color> {
 
 fn sanitize(s: &str) -> Option<&str> {
     let pat: &[char] = &['/', '\\'];
-    if !s.contains(pat) {
-        Some(s)
-    } else {
+    if s.contains(pat) {
         None
+    } else {
+        Some(s)
     }
 }
 
@@ -248,7 +262,7 @@ fn select_layers(map: &mut libtw2_map::Reader, config: &Config) -> Result<Vec<La
             layers.push(Layer {
                 color: normal.color.into(),
                 image: normal.image,
-                tiles: tiles,
+                tiles,
             });
         }
     }
@@ -277,29 +291,26 @@ where
                         let image = map.image(image_idx)?;
                         let height = image.height.usize();
                         let width = image.width.usize();
-                        match image.data {
-                            Some(d) => {
-                                let data = map.image_data(d)?;
-                                if data.len() % mem::size_of::<Color>() != 0 {
-                                    return Err(OwnError::ImageShape.into());
-                                }
-                                let data: Vec<Color> = unsafe { vec::transmute(data) };
-                                Array2::from_shape_vec((height, width), data)
-                                    .map_err(|_| OwnError::ImageShape)?
-                            }
-                            None => {
-                                let image_name = map.image_name(image.name)?;
-                                // WARN? Unknown external image
-                                // WARN! Wrong dimensions
-                                str::from_utf8(&image_name)
-                                    .ok()
-                                    .and_then(sanitize)
-                                    .map(&mut external_tileset_loader)
-                                    .transpose()?
-                                    .unwrap_or(None)
-                                    .unwrap_or_else(|| Array2::from_elem((1, 1), Color::white()))
-                            }
-                        }
+        if let Some(d) = image.data {
+            let data = map.image_data(d)?;
+            if data.len() % mem::size_of::<Color>() != 0 {
+                return Err(OwnError::ImageShape.into());
+            }
+            let data: Vec<Color> = unsafe { vec::transmute(data) };
+            Array2::from_shape_vec((height, width), data)
+                .map_err(|_| OwnError::ImageShape)?
+        } else {
+            let image_name = map.image_name(image.name)?;
+            // WARN? Unknown external image
+            // WARN! Wrong dimensions
+            str::from_utf8(&image_name)
+                .ok()
+                .and_then(sanitize)
+                .map(&mut external_tileset_loader)
+                .transpose()?
+                .unwrap_or(None)
+                .unwrap_or_else(|| Array2::from_elem((1, 1), Color::white()))
+        }
                     }
                 };
                 v.insert(normalize_tileset(data, tile_len));
@@ -312,9 +323,9 @@ where
 
 fn crop_to_fit_nonair_tiles(layers: &[Layer]) -> Rect {
     let mut crop = Rect {
-        min_x: u32::max_value(),
+        min_x: u32::MAX,
         max_x: 0,
-        min_y: u32::max_value(),
+        min_y: u32::MAX,
         max_y: 0,
     };
 
@@ -411,7 +422,7 @@ where
     let dfr = df::Reader::open(path)?;
     let mut map = libtw2_map::Reader::from_datafile(dfr);
 
-    let layers = select_layers(&mut map, &config)?;
+    let layers = select_layers(&mut map, config)?;
 
     let crop = match config.crop {
         Some(crop) => crop,
@@ -421,7 +432,7 @@ where
         return Err(OwnError::EmptyMap.into());
     }
 
-    let tile_len = scale_tile_len(&crop, &config);
+    let tile_len = scale_tile_len(&crop, config);
     let tilesets = prepare_tilesets(&layers, &mut map, &mut external_tileset_loader, tile_len)?;
     let result = render_layers(&layers, &tilesets, &crop, tile_len);
 
@@ -528,7 +539,7 @@ impl From<OwnError> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::Io(ref e) => return e.fmt(f),
+            Error::Io(ref e) => e.fmt(f),
             // TODO: Improve error output
             _ => fmt::Debug::fmt(self, f),
         }
@@ -547,8 +558,7 @@ struct ErrorStats {
 
 impl ErrorStats {
     fn has_errors(&self) -> bool {
-        false
-            || !self.map_errors.is_empty()
+        !self.map_errors.is_empty()
             || !self.df_errors.is_empty()
             || !self.own_errors.is_empty()
             || !self.image_errors.is_empty()
@@ -568,32 +578,29 @@ fn update_error_stats(stats: &mut ErrorStats, err: Error) {
 
 fn print_error_stats(error_stats: &ErrorStats) {
     for (e, c) in &error_stats.map_errors {
-        println!("{:?}: {}", e, c);
+        println!("{e:?}: {c}");
     }
     for (e, c) in &error_stats.df_errors {
-        println!("{:?}: {}", e, c);
+        println!("{e:?}: {c}");
     }
     for (e, c) in &error_stats.own_errors {
-        println!("{:?}: {}", e, c);
+        println!("{e:?}: {c}");
     }
     for e in &error_stats.io_errors {
-        println!("{:?}", e);
+        println!("{e:?}");
     }
     for e in &error_stats.image_errors {
-        println!("{:?}", e);
+        println!("{e:?}");
     }
     println!("ok: {}", error_stats.ok);
 }
 
 fn load_external_image(path: &Path) -> Result<Option<Array2<Color>>, Error> {
     let image_result = image::open(path);
-    match image_result {
-        Err(ImageError::IoError(ref e)) => {
-            if e.kind() == io::ErrorKind::NotFound {
-                return Ok(None);
-            }
+    if let Err(ImageError::IoError(ref e)) = image_result {
+        if e.kind() == io::ErrorKind::NotFound {
+            return Ok(None);
         }
-        _ => {}
     }
     let image = image_result?.to_rgba8();
     let (width, height) = image.dimensions();
@@ -639,9 +646,7 @@ fn main() {
         )
         .get_matches();
 
-    let crop = if !matches.is_present("crop") {
-        None
-    } else {
+    let crop = if matches.is_present("crop") {
         let crop = values_t!(matches, "crop", u32).unwrap_or_else(|e| e.exit());
         if crop[0] > crop[2] {
             clap::Error::with_description(
@@ -663,12 +668,14 @@ fn main() {
             max_x: crop[2] + 1,
             max_y: crop[3] + 1,
         })
+    } else {
+        None
     };
 
     let config = Config {
         size: value_t!(matches, "size", u32).unwrap_or_else(|e| e.exit()),
         render_detail: !matches.is_present("no-detail"),
-        crop: crop,
+        crop,
     };
 
     let args = matches.values_of_os("map").unwrap();
@@ -681,7 +688,7 @@ fn main() {
     let mut external = |name: &str| match external_images.entry(name.into()) {
         hash_map::Entry::Occupied(o) => Ok(o.get().clone()),
         hash_map::Entry::Vacant(v) => {
-            let image = load_external_image(Path::new(&format!("mapres/{}.png", name)))?;
+            let image = load_external_image(Path::new(&format!("mapres/{name}.png")))?;
             Ok(v.insert(image).clone())
         }
     };
@@ -689,7 +696,7 @@ fn main() {
     for arg in args {
         num_args += 1;
         out_path_buf.clear();
-        out_path_buf.push(&arg);
+        out_path_buf.push(arg);
         out_path_buf.push(".png");
         let path = Path::new(&arg);
         match process(path, Path::new(&out_path_buf), &mut external, &config) {

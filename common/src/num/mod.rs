@@ -8,6 +8,7 @@ pub trait CastFloat {
     fn trunc_to_i32(self) -> i32;
 }
 
+#[allow(clippy::cast_possible_truncation)]
 impl CastFloat for f32 {
     fn round_to_i32(self) -> i32 {
         // TODO: Do overflow checking?

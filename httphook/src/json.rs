@@ -43,7 +43,7 @@ impl<'de> serde::Deserialize<'de> for Iso3166_1Numeric {
         deserializer: D,
     ) -> Result<Iso3166_1Numeric, D::Error> {
         let inner = i32::deserialize(deserializer)?;
-        if !(0 <= inner && inner < 1000) {
+        if !(0..1000).contains(&inner) {
             return Err(serde::de::Error::invalid_value(
                 serde::de::Unexpected::Signed(inner.into()),
                 &"integer between 0 and 999",
@@ -70,7 +70,7 @@ impl From<&browse_protocol::ServerInfo> for Server {
             name: (&*info.name).into(),
             map: Map {
                 name: (&*info.map).into(),
-                tw_crc: info.map_crc.map(|crc| format!("{:08x}", crc)),
+                tw_crc: info.map_crc.map(|crc| format!("{crc:08x}")),
                 size: info.map_size,
             },
             version: (&*info.version).into(),

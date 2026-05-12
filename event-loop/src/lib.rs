@@ -1,3 +1,28 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cloned_instead_of_copied,
+    clippy::default_trait_access,
+    clippy::doc_markdown,
+    clippy::elidable_lifetime_names,
+    clippy::enum_glob_use,
+    clippy::expect_used,
+    clippy::items_after_statements,
+    clippy::large_enum_variant,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::module_name_repetitions,
+    clippy::must_use_candidate,
+    clippy::needless_pass_by_value,
+    clippy::ptr_as_ptr,
+    clippy::similar_names,
+    clippy::too_many_lines,
+    clippy::type_complexity,
+    clippy::uninlined_format_args,
+    clippy::unwrap_used,
+    clippy::used_underscore_binding,
+)]
+
 #[macro_use]
 extern crate log;
 

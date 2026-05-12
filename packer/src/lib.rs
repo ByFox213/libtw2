@@ -56,9 +56,9 @@ where
     let mut len = 1;
 
     let mut src = *unwrap_or_return!(iter.next(), Err(UnexpectedEnd));
-    let sign = ((src >> 6) & 1) as i32;
+    let sign = i32::from((src >> 6) & 1);
 
-    result |= (src & 0b0011_1111) as i32;
+    result |= i32::from(src & 0b0011_1111);
 
     for i in 0..4 {
         if src & 0b1000_0000 == 0 {
@@ -69,7 +69,7 @@ where
         if i == 3 && src & 0b1111_0000 != 0 {
             warn.warn(Warning::NonZeroIntPadding);
         }
-        result |= ((src & 0b0111_1111) as i32) << (6 + 7 * i);
+        result |= i32::from(src & 0b0111_1111) << (6 + 7 * i);
     }
 
     if len > 1 && src == 0b0000_0000 {
@@ -94,7 +94,8 @@ fn to_bit(b: bool, bit: u32) -> u8 {
 fn write_int<E, F: FnMut(&[u8]) -> Result<(), E>>(int: i32, f: F) -> Result<(), E> {
     let mut f = f;
     let mut buf: ArrayVec<[u8; 5]> = ArrayVec::new();
-    let sign = if int < 0 { 1 } else { 0 };
+    let sign = i32::from(int < 0);
+    #[allow(clippy::cast_sign_loss)]
     let mut int = (int ^ -sign) as u32;
     let next = (int & 0b0011_1111) as u8;
     int >>= 6;
@@ -110,7 +111,7 @@ fn write_int<E, F: FnMut(&[u8]) -> Result<(), E>>(int: i32, f: F) -> Result<(), 
 fn read_string<'a>(iter: &mut slice::Iter<'a, u8>) -> Result<&'a [u8], UnexpectedEnd> {
     let slice = iter.as_slice();
     // `by_ref` is needed as the iterator is silently copied otherwise.
-    for (i, b) in iter.by_ref().cloned().enumerate() {
+    for (i, b) in iter.by_ref().copied().enumerate() {
         if b == 0 {
             return Ok(&slice[..i]);
         }
@@ -141,28 +142,35 @@ impl<'d, 's> Packer<'d, 's> {
     fn new(buf: BufferRef<'d, 's>) -> Packer<'d, 's> {
         Packer { buf }
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn write_string(&mut self, string: &[u8]) -> Result<(), CapacityError> {
         write_string(string, |b| self.buf.write(b))
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn write_int(&mut self, int: i32) -> Result<(), CapacityError> {
         write_int(int, |b| self.buf.write(b))
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn write_data(&mut self, data: &[u8]) -> Result<(), CapacityError> {
         self.write_int(data.len().try_i32().ok_or(CapacityError)?)?;
         self.buf.write(data)?;
         Ok(())
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn write_raw(&mut self, data: &[u8]) -> Result<(), CapacityError> {
         self.buf.write(data)
     }
     #[cfg(feature = "uuid")]
+    #[allow(clippy::missing_errors_doc)]
     pub fn write_uuid(&mut self, uuid: Uuid) -> Result<(), CapacityError> {
         self.write_raw(uuid.as_bytes())
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn write_rest(&mut self, data: &[u8]) -> Result<(), CapacityError> {
         // TODO: Fail if other stuff happens afterwards.
         self.buf.write(data)
     }
+    #[must_use]
     pub fn written(self) -> &'d [u8] {
         self.buf.initialized()
     }
@@ -189,9 +197,12 @@ impl<'a> Unpacker<'a> {
             demo,
         }
     }
+    #[must_use]
     pub fn new(data: &[u8]) -> Unpacker<'_> {
         Unpacker::new_impl(data, false)
     }
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn new_from_demo(data: &[u8]) -> Unpacker<'_> {
         assert!(
             data.len() % 4 == 0,
@@ -199,6 +210,7 @@ impl<'a> Unpacker<'a> {
         );
         Unpacker::new_impl(data, true)
     }
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.iter.len() == 0
     }
@@ -210,14 +222,17 @@ impl<'a> Unpacker<'a> {
         self.use_up();
         Err(UnexpectedEnd)
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn read_string(&mut self) -> Result<&'a [u8], UnexpectedEnd> {
         read_string(&mut self.iter)
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn read_int<W: Warn<Warning>>(&mut self, warn: &mut W) -> Result<i32, UnexpectedEnd> {
         read_int(warn, &mut self.iter)
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn read_data<W: Warn<Warning>>(&mut self, warn: &mut W) -> Result<&'a [u8], UnexpectedEnd> {
-        let len = match self.read_int(warn).map(|l| l.try_usize()) {
+        let len = match self.read_int(warn).map(Cast::try_usize) {
             Ok(Some(l)) => l,
             _ => return self.error(),
         };
@@ -229,12 +244,14 @@ impl<'a> Unpacker<'a> {
         self.iter = remaining.iter();
         Ok(data)
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn read_rest(&mut self) -> Result<&'a [u8], UnexpectedEnd> {
         // TODO: Fail if earlier call errored out.
         let result = Ok(self.iter.as_slice());
         self.use_up();
         result
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn read_raw(&mut self, len: usize) -> Result<&'a [u8], UnexpectedEnd> {
         let slice = self.iter.as_slice();
         if slice.len() < len {
@@ -246,6 +263,7 @@ impl<'a> Unpacker<'a> {
         Ok(raw)
     }
     #[cfg(feature = "uuid")]
+    #[allow(clippy::missing_errors_doc)]
     pub fn read_uuid(&mut self) -> Result<Uuid, UnexpectedEnd> {
         let raw = self.read_raw(mem::size_of::<Uuid>())?;
         match Uuid::from_slice(raw) {
@@ -254,21 +272,21 @@ impl<'a> Unpacker<'a> {
         }
     }
     pub fn finish<W: Warn<ExcessData>>(&mut self, warn: &mut W) {
-        if !self.demo {
-            if !self.is_empty() {
-                warn.warn(ExcessData);
-            }
-        } else {
+        if self.demo {
             let rest = self.as_slice();
             if rest.len() >= 4 || rest.iter().any(|&b| b != 0) {
                 warn.warn(ExcessData);
             }
+        } else if !self.is_empty() {
+            warn.warn(ExcessData);
         }
         self.use_up();
     }
+    #[must_use]
     pub fn as_slice(&self) -> &'a [u8] {
         self.iter.as_slice()
     }
+    #[must_use]
     pub fn num_bytes_read(&self) -> usize {
         self.original.len() - self.iter.len()
     }
@@ -279,9 +297,11 @@ pub struct IntUnpacker<'a> {
 }
 
 impl<'a> IntUnpacker<'a> {
+    #[must_use]
     pub fn new(slice: &[i32]) -> IntUnpacker<'_> {
         IntUnpacker { iter: slice.iter() }
     }
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.iter.len() == 0
     }
@@ -289,6 +309,7 @@ impl<'a> IntUnpacker<'a> {
         // Advance the iterator to the end.
         self.iter.by_ref().count();
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn read_int(&mut self) -> Result<i32, UnexpectedEnd> {
         self.iter.next().copied().ok_or(UnexpectedEnd)
     }
@@ -298,11 +319,13 @@ impl<'a> IntUnpacker<'a> {
         }
         self.use_up();
     }
+    #[must_use]
     pub fn as_slice(&self) -> &'a [i32] {
         self.iter.as_slice()
     }
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn in_range(v: i32, min: i32, max: i32) -> Result<i32, IntOutOfRange> {
     if min <= v && v <= max {
         Ok(v)
@@ -311,6 +334,7 @@ pub fn in_range(v: i32, min: i32, max: i32) -> Result<i32, IntOutOfRange> {
     }
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn at_least(v: i32, min: i32) -> Result<i32, IntOutOfRange> {
     if min <= v {
         Ok(v)
@@ -319,10 +343,12 @@ pub fn at_least(v: i32, min: i32) -> Result<i32, IntOutOfRange> {
     }
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn to_bool(v: i32) -> Result<bool, IntOutOfRange> {
     Ok(in_range(v, 0, 1)? != 0)
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn sanitize<'a, W: Warn<Warning>>(
     warn: &mut W,
     v: &'a [u8],
@@ -335,6 +361,7 @@ pub fn sanitize<'a, W: Warn<Warning>>(
     Ok(v)
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn positive(v: i32) -> Result<i32, IntOutOfRange> {
     if v >= 0 {
         Ok(v)
@@ -343,12 +370,13 @@ pub fn positive(v: i32) -> Result<i32, IntOutOfRange> {
     }
 }
 
+#[allow(clippy::missing_panics_doc)]
 pub fn string_to_ints(result: &mut [i32], string: &[u8]) {
     assert!(string.iter().all(|&b| b != 0));
     // Strict less-than because of the NUL-termination.
-    assert!(string.len() < std::mem::size_of_val(result));
+    assert!(string.len() < mem::size_of_val(result));
     let mut output = result.iter_mut();
-    let mut input = string.iter().cloned();
+    let mut input = string.iter().copied();
     while let Some(o) = output.next() {
         let v0 = input.next().unwrap_or(0).wrapping_add(0x80);
         let v1 = input.next().unwrap_or(0).wrapping_add(0x80);
@@ -358,20 +386,23 @@ pub fn string_to_ints(result: &mut [i32], string: &[u8]) {
             .next()
             .unwrap_or(if output.len() != 0 { 0 } else { 0x80 })
             .wrapping_add(0x80);
-        *o = (v0 as i32) << 24 | (v1 as i32) << 16 | (v2 as i32) << 8 | (v3 as i32);
+        *o = i32::from(v0) << 24 | i32::from(v1) << 16 | i32::from(v2) << 8 | i32::from(v3);
     }
 }
 
+#[must_use]
 pub fn string_to_ints3(string: &[u8]) -> [i32; 3] {
     let mut result: [i32; 3] = Default::default();
     string_to_ints(&mut result, string);
     result
 }
+#[must_use]
 pub fn string_to_ints4(string: &[u8]) -> [i32; 4] {
     let mut result: [i32; 4] = Default::default();
     string_to_ints(&mut result, string);
     result
 }
+#[must_use]
 pub fn string_to_ints6(string: &[u8]) -> [i32; 6] {
     let mut result: [i32; 6] = Default::default();
     string_to_ints(&mut result, string);
@@ -397,6 +428,7 @@ where
     string
 }
 
+#[allow(clippy::missing_errors_doc)]
 pub fn string_to_bytes<'a, B: Buffer<'a>>(
     buf: B,
     string: &[u8],
@@ -404,8 +436,8 @@ pub fn string_to_bytes<'a, B: Buffer<'a>>(
     with_buffer(buf, |buf| string_to_bytes_buffer_ref(buf, string))
 }
 
-fn string_to_bytes_buffer_ref<'d, 's>(
-    mut buf: BufferRef<'d, 's>,
+fn string_to_bytes_buffer_ref<'d>(
+    mut buf: BufferRef<'d, '_>,
     string: &[u8],
 ) -> Result<&'d [u8], CapacityError> {
     assert!(string.iter().all(|&b| b != 0));
@@ -416,12 +448,12 @@ fn string_to_bytes_buffer_ref<'d, 's>(
 
 #[cfg(test)]
 #[rustfmt::skip]
+#[allow(clippy::unwrap_used)]
 mod test {
     use arrayvec::ArrayVec;
     use libtw2_warn::Ignore;
     use libtw2_warn::Panic;
     use quickcheck::quickcheck;
-    use std::i32;
     use super::ExcessData;
     use super::Unpacker;
     use super::Warning::*;
@@ -486,8 +518,8 @@ mod test {
     #[test] fn int_64() { assert_int(b"\x80\x01", 64) }
     #[test] fn int_m65() { assert_int(b"\xc0\x01", -65) }
     #[test] fn int_m64() { assert_int(b"\x7f", -64) }
-    #[test] fn int_min() { assert_int(b"\xff\xff\xff\xff\x0f", i32::min_value()) }
-    #[test] fn int_max() { assert_int(b"\xbf\xff\xff\xff\x0f", i32::max_value()) }
+    #[test] fn int_min() { assert_int(b"\xff\xff\xff\xff\x0f", i32::MIN) }
+    #[test] fn int_max() { assert_int(b"\xbf\xff\xff\xff\x0f", i32::MAX) }
     #[test] fn int_quirk1() { assert_int_warn(b"\xff\xff\xff\xff\xff", 0, NonZeroIntPadding) }
     #[test] fn int_quirk2() { assert_int_warn(b"\xbf\xff\xff\xff\xff", -1, NonZeroIntPadding) }
     #[test] fn int_empty() { assert_int_err(b"") }

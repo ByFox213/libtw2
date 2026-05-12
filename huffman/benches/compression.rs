@@ -1,3 +1,11 @@
+#![allow(
+    clippy::legacy_numeric_constants,
+    clippy::unwrap_used,
+    clippy::from_str_radix_10,
+    clippy::needless_borrowed_reference,
+    clippy::semicolon_if_nothing_returned,
+)]
+
 use bencher::benchmark_group;
 use bencher::benchmark_main;
 use bencher::black_box;

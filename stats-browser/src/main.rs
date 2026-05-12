@@ -1,4 +1,10 @@
 #![cfg(not(test))]
+#![allow(
+    clippy::items_after_statements,
+    clippy::manual_assert,
+    clippy::uninlined_format_args,
+    clippy::unwrap_used,
+)]
 
 use clap::value_t;
 use clap::App;

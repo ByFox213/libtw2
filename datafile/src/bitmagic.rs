@@ -54,7 +54,7 @@ pub trait CallbackNewExt {
     ) -> Result<Vec<T>, CallbackReadError>;
 }
 
-impl<'a> CallbackNewExt for &'a mut dyn CallbackNew {
+impl CallbackNewExt for &mut dyn CallbackNew {
     fn read_exact(&mut self, buffer: &mut [u8]) -> Result<(), CallbackReadError> {
         let read = self.read(buffer)?;
         if read != buffer.len() {
@@ -116,7 +116,7 @@ pub trait CallbackReadDataExt {
     ) -> Result<Vec<u8>, CallbackReadError>;
 }
 
-impl<'a> CallbackReadDataExt for &'a mut dyn CallbackReadData {
+impl CallbackReadDataExt for &mut dyn CallbackReadData {
     fn seek_read_exact(&mut self, offset: u32, buffer: &mut [u8]) -> Result<(), CallbackReadError> {
         let read = self.seek_read(offset, buffer)?;
         if read != buffer.len() {

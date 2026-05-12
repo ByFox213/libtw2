@@ -48,16 +48,16 @@ pub const INFO_6_EX: Header = b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffiext";
 pub const INFO_6_EX_MORE: Header = b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffiex+";
 pub const CHALLENGE_6: Header = b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffchal";
 
-pub const TOKEN_7: &'static [u8; 8] = b"\x04\0\0\xff\xff\xff\xff\x05";
-pub const REQUEST_LIST_7: &'static [u8; 17] =
+pub const TOKEN_7: &[u8; 8] = b"\x04\0\0\xff\xff\xff\xff\x05";
+pub const REQUEST_LIST_7: &[u8; 17] =
     b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffreq2";
-pub const LIST_7: &'static [u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfflis2";
-pub const REQUEST_COUNT_7: &'static [u8; 17] =
+pub const LIST_7: &[u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfflis2";
+pub const REQUEST_COUNT_7: &[u8; 17] =
     b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffcou2";
-pub const COUNT_7: &'static [u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffsiz2";
-pub const REQUEST_INFO_7: &'static [u8; 17] =
+pub const COUNT_7: &[u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffsiz2";
+pub const REQUEST_INFO_7: &[u8; 17] =
     b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffgie3";
-pub const INFO_7: &'static [u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffinf3";
+pub const INFO_7: &[u8; 17] = b"\x21\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffinf3";
 
 pub const PACKETFLAG_CONNLESS: u8 = 1 << 6;
 pub const SERVERINFO_FLAG_PASSWORDED: i32 = 1 << 0;
@@ -69,16 +69,19 @@ pub const IPV4_MAPPING: [u8; 12] = [
 
 // dont-send-http-servers@mastersrv.ddnet.org
 // e02cb630-b680-38f6-81a6-da096e9696d1
-pub const NO_BACKCOMPAT: &'static [u8; 16] = &[
+pub const NO_BACKCOMPAT: &[u8; 16] = &[
     0xe0, 0x2c, 0xb6, 0x30, 0xb6, 0x80, 0x38, 0xf6, 0x81, 0xa6, 0xda, 0x09, 0x6e, 0x96, 0x96, 0xd1,
 ];
 
+#[must_use]
 pub fn request_list_5() -> [u8; 14] {
     *REQUEST_LIST_5
 }
+#[must_use]
 pub fn request_list_6() -> [u8; 14] {
     *REQUEST_LIST_6
 }
+#[must_use]
 pub fn request_list_7(own_token: Token7, their_token: Token7) -> [u8; 17] {
     let mut request = [0; 17];
     request.copy_from_slice(REQUEST_LIST_7);
@@ -86,18 +89,21 @@ pub fn request_list_7(own_token: Token7, their_token: Token7) -> [u8; 17] {
     request[5..9].copy_from_slice(&own_token.0);
     request
 }
+#[must_use]
 pub fn request_list_5_nobackcompat() -> [u8; 30] {
     let mut request = [0; 30];
     request[..14].copy_from_slice(REQUEST_LIST_5);
     request[14..].copy_from_slice(NO_BACKCOMPAT);
     request
 }
+#[must_use]
 pub fn request_list_6_nobackcompat() -> [u8; 30] {
     let mut request = [0; 30];
     request[..14].copy_from_slice(REQUEST_LIST_6);
     request[14..].copy_from_slice(NO_BACKCOMPAT);
     request
 }
+#[must_use]
 pub fn request_list_7_nobackcompat(own_token: Token7, their_token: Token7) -> [u8; 33] {
     let mut request = [0; 33];
     request[..17].copy_from_slice(&request_list_7(own_token, their_token));
@@ -105,15 +111,20 @@ pub fn request_list_7_nobackcompat(own_token: Token7, their_token: Token7) -> [u
     request
 }
 
+#[must_use]
 pub fn request_info_5(challenge: u8) -> [u8; 15] {
     request_info(REQUEST_INFO_5, challenge)
 }
+#[must_use]
 pub fn request_info_6(challenge: u8) -> [u8; 15] {
     request_info(REQUEST_INFO_6, challenge)
 }
+#[must_use]
 pub fn request_info_6_64(challenge: u8) -> [u8; 15] {
     request_info(REQUEST_INFO_6_64, challenge)
 }
+#[allow(clippy::missing_panics_doc)]
+#[must_use]
 pub fn request_info_6_ex(challenge: u32) -> [u8; 15] {
     assert!(
         challenge & 0x00ff_ffff == challenge,
@@ -123,9 +134,10 @@ pub fn request_info_6_ex(challenge: u32) -> [u8; 15] {
     request[..HEADER_LEN].copy_from_slice(REQUEST_INFO_6_EX);
     request[2] = ((challenge & 0x00ff_0000) >> 16) as u8;
     request[3] = ((challenge & 0x0000_ff00) >> 8) as u8;
-    request[HEADER_LEN] = ((challenge & 0x0000_00ff) >> 0) as u8;
+    request[HEADER_LEN] = (challenge & 0x0000_00ff) as u8;
     request
 }
+#[must_use]
 pub fn request_token_7(own_token: Token7) -> [u8; 520] {
     let mut request = [0; 520];
     request[..8].copy_from_slice(TOKEN_7);
@@ -133,6 +145,8 @@ pub fn request_token_7(own_token: Token7) -> [u8; 520] {
     request[8..12].copy_from_slice(&own_token.0);
     request
 }
+#[allow(clippy::missing_panics_doc)]
+#[must_use]
 pub fn request_info_7(own_token: Token7, their_token: Token7, challenge: u8) -> [u8; 18] {
     assert!(
         challenge & 0x3f == challenge,
@@ -146,15 +160,18 @@ pub fn request_info_7(own_token: Token7, their_token: Token7, challenge: u8) -> 
     request
 }
 
+#[must_use]
 pub fn request_count() -> [u8; 14] {
     *REQUEST_COUNT
 }
+#[must_use]
 pub fn request_count_nobackcompat() -> [u8; 30] {
     let mut request = [0; 30];
     request[..14].copy_from_slice(REQUEST_COUNT);
     request[14..].copy_from_slice(NO_BACKCOMPAT);
     request
 }
+#[must_use]
 pub fn request_count_7(own_token: Token7, their_token: Token7) -> [u8; 17] {
     let mut request = [0; 17];
     request.copy_from_slice(REQUEST_COUNT_7);
@@ -162,6 +179,7 @@ pub fn request_count_7(own_token: Token7, their_token: Token7) -> [u8; 17] {
     request[5..9].copy_from_slice(&own_token.0);
     request
 }
+#[must_use]
 pub fn request_count_7_nobackcompat(own_token: Token7, their_token: Token7) -> [u8; 33] {
     let mut request = [0; 33];
     request[..17].copy_from_slice(&request_count_7(own_token, their_token));
@@ -218,8 +236,9 @@ impl fmt::Debug for ClientInfo {
 pub const CLIENTINFO_FLAG_SPECTATOR: i32 = 1 << 0;
 pub const CLIENTINFO_FLAG_BOT: i32 = 1 << 1;
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ServerInfoVersion {
+    #[default]
     V5,
     V6,
     V6Ddper,
@@ -236,7 +255,7 @@ enum ReceivedServerInfoVersion {
 
 impl From<ReceivedServerInfoVersion> for ServerInfoVersion {
     fn from(version: ReceivedServerInfoVersion) -> ServerInfoVersion {
-        use self::ReceivedServerInfoVersion::*;
+        use self::ReceivedServerInfoVersion::{Normal, V6ExMore};
         match version {
             Normal(n) => n,
             V6ExMore => ServerInfoVersion::V6Ex,
@@ -246,64 +265,59 @@ impl From<ReceivedServerInfoVersion> for ServerInfoVersion {
 
 impl ReceivedServerInfoVersion {
     fn is_normal(self) -> bool {
-        use self::ReceivedServerInfoVersion::*;
-        match self {
-            Normal(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Normal(_))
     }
 }
 
 impl ServerInfoVersion {
+    #[must_use]
     pub fn max_clients(self) -> Option<u32> {
         Some(match self {
-            ServerInfoVersion::V5 => MAX_CLIENTS_5,
-            ServerInfoVersion::V6 => MAX_CLIENTS_5,
-            ServerInfoVersion::V6Ddper => MAX_CLIENTS_5,
+            ServerInfoVersion::V5 | ServerInfoVersion::V6 | ServerInfoVersion::V6Ddper => MAX_CLIENTS_5,
             ServerInfoVersion::V664 => MAX_CLIENTS_6_64,
             ServerInfoVersion::V6Ex => return None,
             ServerInfoVersion::V7 => MAX_CLIENTS_7,
         })
     }
+    #[must_use]
     pub fn clients_per_packet(self) -> Option<u32> {
         Some(match self {
-            ServerInfoVersion::V5 => 16,
-            ServerInfoVersion::V6 => 16,
-            ServerInfoVersion::V6Ddper => 16,
             ServerInfoVersion::V664 => 24,
             ServerInfoVersion::V6Ex => return None,
-            ServerInfoVersion::V7 => 16,
+            ServerInfoVersion::V5 | ServerInfoVersion::V6 | ServerInfoVersion::V6Ddper | ServerInfoVersion::V7 => 16,
         })
     }
+    #[must_use]
     pub fn has_hostname(self) -> bool {
         self >= ServerInfoVersion::V7
     }
+    #[must_use]
     pub fn has_progression(self) -> bool {
         self == ServerInfoVersion::V5
     }
+    #[must_use]
     pub fn has_skill_level(self) -> bool {
         self >= ServerInfoVersion::V7
     }
+    #[must_use]
     pub fn has_offset(self) -> bool {
         self == ServerInfoVersion::V664
     }
+    #[must_use]
     pub fn has_extended_player_info(self) -> bool {
         self >= ServerInfoVersion::V6
     }
+    #[must_use]
     pub fn has_extended_map_info(self) -> bool {
         self == ServerInfoVersion::V6Ex
     }
+    #[must_use]
     pub fn has_extra_info(self) -> bool {
         self == ServerInfoVersion::V6Ex
     }
+    #[must_use]
     pub fn has_full_client_flags(self) -> bool {
         self == ServerInfoVersion::V7
-    }
-}
-
-impl Default for ServerInfoVersion {
-    fn default() -> ServerInfoVersion {
-        ServerInfoVersion::V5
     }
 }
 
@@ -375,12 +389,13 @@ pub enum MergeError {
 impl PartialServerInfo {
     fn new() -> PartialServerInfo {
         PartialServerInfo {
-            info: Default::default(),
+            info: ServerInfo::default(),
             received: Default::default(),
         }
     }
     // TODO: What to do when the infos don't match?
     // Currently the other info is just ignored.
+    #[allow(clippy::missing_errors_doc)]
     pub fn merge(&mut self, mut other: PartialServerInfo) -> Result<(), MergeError> {
         if self.info.token != other.info.token {
             return Err(MergeError::DifferingTokens);
@@ -404,10 +419,11 @@ impl PartialServerInfo {
         if self.info.info_version == ServerInfoVersion::V6Ex && self.received & 1 == 0 {
             mem::swap(self, &mut other);
         }
-        self.info.clients.extend(other.info.clients.into_iter());
+        self.info.clients.extend(other.info.clients);
 
         Ok(())
     }
+    #[must_use]
     pub fn token(&self) -> i32 {
         self.info.token
     }
@@ -419,11 +435,9 @@ impl PartialServerInfo {
         Some(&self.info)
     }
     pub fn take_info(&mut self) -> Option<ServerInfo> {
-        if self.get_info().is_none() {
-            return None;
-        }
+        self.get_info()?;
         self.received = !0;
-        Some(mem::replace(&mut self.info, Default::default()))
+        Some(mem::take(&mut self.info))
     }
 }
 
@@ -436,6 +450,7 @@ fn debug_parse_fail(help: &str) -> Option<PartialServerInfo> {
     None
 }
 
+#[allow(clippy::cast_sign_loss, clippy::too_many_lines)]
 fn parse_server_info<RI, RS>(
     unpacker: &mut Unpacker,
     read_int: RI,
@@ -472,13 +487,7 @@ where
         i.token = int!("token");
         let packet_no;
         let offset;
-        if !received_version.is_normal() {
-            packet_no = int!("packet_no");
-            if packet_no < 1 || packet_no > 64 {
-                return fail("packet_no sanity check");
-            }
-            offset = 0;
-        } else {
+        if received_version.is_normal() {
             packet_no = 0;
             i.version = str!("version");
             i.name = str!("name");
@@ -520,19 +529,17 @@ where
                 i.num_clients = i.num_players;
                 i.max_clients = i.max_players;
             }
-            let raw_offset;
-            if version.has_offset() {
-                raw_offset = int!("offset");
+            let raw_offset = if version.has_offset() {
+                int!("offset")
             } else {
-                raw_offset = 0;
-            }
+                0
+            };
             if i.num_clients < 0
                 || i.num_clients > i.max_clients
                 || i.max_clients < 0
                 || version
                     .max_clients()
-                    .map(|m| i.max_clients > m.assert_i32())
-                    .unwrap_or(false)
+                    .map_or(false, |m| i.max_clients > m.assert_i32())
                 || i.num_players < 0
                 || i.num_players > i.num_clients
                 || i.max_players < 0
@@ -541,6 +548,12 @@ where
                 return fail("count sanity check");
             }
             offset = unwrap_or_return!(raw_offset.try_u32(), fail("offset sanity check"));
+        } else {
+            packet_no = int!("packet_no");
+            if !(1..=64).contains(&packet_no) {
+                return fail("packet_no sanity check");
+            }
+            offset = 0;
         }
         if version.has_extra_info() {
             let _: ArrayString<[u8; 0]> = str!("extra_info");
@@ -561,7 +574,7 @@ where
                 clan = str!("client_clan");
                 country = int!("client_country");
             } else {
-                clan = Default::default();
+                clan = ArrayString::default();
                 country = -1;
             }
             let score = int!("client_score");
@@ -586,16 +599,15 @@ where
             if version == ServerInfoVersion::V664 {
                 if j > MAX_CLIENTS_6_64 {
                     continue;
-                } else {
-                    result.received |= 1 << j;
                 }
+                result.received |= 1 << j;
             }
             i.clients.push(ClientInfo {
-                name: name,
-                clan: clan,
-                country: country,
-                score: score,
-                flags: flags,
+                name,
+                clan,
+                country,
+                score,
+                flags,
             });
         }
     }
@@ -621,7 +633,7 @@ fn info_read_str<'a>(unpacker: &mut Unpacker<'a>) -> Option<&'a str> {
         .and_then(|s| str::from_utf8(s).ok())
 }
 
-impl<'a> Info5Response<'a> {
+impl Info5Response<'_> {
     pub fn parse(self) -> Option<ServerInfo> {
         let Info5Response(slice) = self;
         let mut unpacker = Unpacker::new(slice);
@@ -638,7 +650,7 @@ impl<'a> Info5Response<'a> {
     }
 }
 
-impl<'a> Info6Response<'a> {
+impl Info6Response<'_> {
     pub fn parse(self) -> Option<ServerInfo> {
         let Info6Response(slice) = self;
         let mut unpacker = Unpacker::new(slice);
@@ -655,7 +667,7 @@ impl<'a> Info6Response<'a> {
     }
 }
 
-impl<'a> Info6DdperResponse<'a> {
+impl Info6DdperResponse<'_> {
     pub fn parse(self) -> Option<ServerInfo> {
         let Info6DdperResponse(slice) = self;
         let mut unpacker = Unpacker::new(slice);
@@ -672,7 +684,7 @@ impl<'a> Info6DdperResponse<'a> {
     }
 }
 
-impl<'a> Info664Response<'a> {
+impl Info664Response<'_> {
     pub fn parse(self) -> Option<PartialServerInfo> {
         let Info664Response(slice) = self;
         let mut unpacker = Unpacker::new(slice);
@@ -685,7 +697,7 @@ impl<'a> Info664Response<'a> {
     }
 }
 
-impl<'a> Info6ExResponse<'a> {
+impl Info6ExResponse<'_> {
     pub fn parse(self) -> Option<PartialServerInfo> {
         let Info6ExResponse(slice) = self;
         let mut unpacker = Unpacker::new(slice);
@@ -698,7 +710,7 @@ impl<'a> Info6ExResponse<'a> {
     }
 }
 
-impl<'a> Info6ExMoreResponse<'a> {
+impl Info6ExMoreResponse<'_> {
     pub fn parse(self) -> Option<PartialServerInfo> {
         let Info6ExMoreResponse(slice) = self;
         let mut unpacker = Unpacker::new(slice);
@@ -711,7 +723,7 @@ impl<'a> Info6ExMoreResponse<'a> {
     }
 }
 
-impl<'a> Info7Response<'a> {
+impl Info7Response<'_> {
     pub fn parse(self) -> Option<ServerInfo> {
         let Info7Response(_, _, slice) = self;
         let mut unpacker = Unpacker::new(slice);
@@ -804,9 +816,10 @@ fn parse_count(data: &[u8]) -> Option<u16> {
     if data.len() > 2 {
         warn!("parsing overlong count");
     }
-    Some(((data[0] as u16) << 8) | (data[1] as u16))
+    Some((u16::from(data[0]) << 8) | u16::from(data[1]))
 }
 
+#[must_use]
 pub fn parse_response(data: &[u8]) -> Option<Response<'_>> {
     match data.first() {
         Some(0x04) => {
@@ -868,7 +881,7 @@ pub fn parse_response(data: &[u8]) -> Option<Response<'_>> {
         return None;
     }
     let (header, data) = data.split_at(HEADER_LEN);
-    let mut header: [u8; HEADER_LEN] = *unsafe { &*(header.as_ptr() as *const [u8; HEADER_LEN]) };
+    let mut header: [u8; HEADER_LEN] = *unsafe { &*header.as_ptr().cast::<[u8; HEADER_LEN]>() };
     if header[..2] != *b"dp" || header[6..] != INFO_6_DDPER[6..] {
         for b in &mut header[..6] {
             *b = 0xff;
@@ -937,6 +950,7 @@ fn check_alignment_addr5_packed() {
 }
 
 impl Addr5Packed {
+    #[must_use]
     pub fn unpack(self) -> Addr {
         let Addr5Packed { ip_address, port } = self;
         Addr {
@@ -953,10 +967,19 @@ fn check_alignment_addr6_packed() {
 }
 
 impl Addr6Packed {
+    #[must_use]
     pub fn unpack(self) -> Addr {
         let Addr6Packed { ip_address, port } = self;
         let (maybe_ipv4_mapping, ipv4_address) = ip_address.split_at(IPV4_MAPPING.len());
-        let new_address = if maybe_ipv4_mapping != IPV4_MAPPING {
+        let new_address = if maybe_ipv4_mapping == IPV4_MAPPING {
+            Ipv4Addr::new(
+                ipv4_address[0],
+                ipv4_address[1],
+                ipv4_address[2],
+                ipv4_address[3],
+            )
+            .into()
+        } else {
             let ip_address: [big_endian::U16; 8] = unsafe { mem::transmute(ip_address) };
             Ipv6Addr::new(
                 ip_address[0].get(),
@@ -969,14 +992,6 @@ impl Addr6Packed {
                 ip_address[7].get(),
             )
             .into()
-        } else {
-            Ipv4Addr::new(
-                ipv4_address[0],
-                ipv4_address[1],
-                ipv4_address[2],
-                ipv4_address[3],
-            )
-            .into()
         };
         Addr {
             ip_address: new_address,
@@ -986,6 +1001,12 @@ impl Addr6Packed {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::octal_escapes,
+    clippy::unreadable_literal,
+    clippy::unwrap_used,
+    clippy::uninlined_format_args
+)]
 mod test {
     use super::ClientInfo;
     use super::Info6ExMoreResponse;

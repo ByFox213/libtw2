@@ -70,7 +70,7 @@ impl TimeoutExt for Timeout {
         *self = Timeout::active(cb.time() + value);
     }
     fn has_triggered_level<CB: Callback>(&self, cb: &mut CB) -> bool {
-        self.to_opt().map(|time| time <= cb.time()).unwrap_or(false)
+        self.to_opt().map_or(false, |time| time <= cb.time())
     }
     fn has_triggered_edge<CB: Callback>(&mut self, cb: &mut CB) -> bool {
         let triggered = self.has_triggered_level(cb);
@@ -125,8 +125,8 @@ impl ResendChunk {
     fn new<CB: Callback>(cb: &mut CB, sequence: Sequence, data: &[u8]) -> ResendChunk {
         let mut result = ResendChunk {
             next_send: Timeout::inactive(),
-            sequence: sequence,
-            data: data.iter().cloned().collect(),
+            sequence,
+            data: data.iter().copied().collect(),
         };
         assert!(
             result.data.len() == data.len(),
@@ -137,7 +137,7 @@ impl ResendChunk {
         result
     }
     fn start_timeout<CB: Callback>(&mut self, cb: &mut CB) {
-        self.next_send.set(cb, Duration::from_millis(1_000));
+        self.next_send.set(cb, Duration::from_secs(1));
     }
 }
 
@@ -179,7 +179,7 @@ impl<'a> ReceivePacket<'a> {
         W: Warn<Warning>,
     {
         let chunks_iter = ChunksIter::new(data, num_chunks);
-        let ack = online.ack.clone();
+        let ack = online.ack;
         let mut iter = chunks_iter.clone();
         while let Some(c) = iter.next_warn(&mut w(warn)) {
             if let Some((sequence, resend)) = c.vital {
@@ -319,7 +319,7 @@ impl OnlineState {
             .resend_queue
             .iter()
             .position(|chunk| chunk.sequence == ack);
-        index.map(|i| self.resend_queue.truncate(i));
+        if let Some(i) = index { self.resend_queue.truncate(i); }
     }
     fn flush<CB: Callback>(
         &mut self,
@@ -342,7 +342,10 @@ impl OnlineState {
                     ),
                 }),
             )
-            .map_err(|e| e.unwrap_callback());
+            .map_err(|e| {
+                #[allow(clippy::unwrap_used)]
+                e.unwrap_callback()
+            });
         self.request_resend = false;
         self.packet.clear();
         self.packet_nonvital.clear();
@@ -364,6 +367,7 @@ impl PacketContents {
         }
     }
     fn write_chunk(&mut self, data: &[u8], vital: Option<(u16, bool)>) {
+        #[allow(clippy::unwrap_used)]
         protocol::write_chunk(data, vital, &mut self.data).unwrap();
         self.num_chunks += 1;
     }
@@ -390,7 +394,7 @@ enum SequenceOrdering {
 
 impl Sequence {
     fn new() -> Sequence {
-        Default::default()
+        Sequence::default()
     }
     fn from_u16(seq: u16) -> Sequence {
         assert!(seq < protocol::SEQUENCE_MODULUS);
@@ -415,12 +419,11 @@ impl Sequence {
     /// Returns what `other` is in relation to `self`.
     fn compare(self, other: Sequence) -> SequenceOrdering {
         let half = protocol::SEQUENCE_MODULUS / 2;
-        let less;
-        match self.seq.cmp(&other.seq) {
-            cmp::Ordering::Less => less = other.seq - self.seq < half,
-            cmp::Ordering::Greater => less = self.seq - other.seq > half,
+        let less = match self.seq.cmp(&other.seq) {
+            cmp::Ordering::Less => other.seq - self.seq < half,
+            cmp::Ordering::Greater => self.seq - other.seq > half,
             cmp::Ordering::Equal => return SequenceOrdering::Current,
-        }
+        };
         if less {
             SequenceOrdering::Future
         } else {
@@ -515,10 +518,7 @@ impl Connection {
         reason: &[u8],
     ) -> Result<(), CB::Error> {
         if let State::Disconnected = self.state {
-            assert!(
-                false,
-                "Can't call disconnect on an already disconnected connection"
-            );
+            panic!("Can't call disconnect on an already disconnected connection");
         }
         assert!(
             reason.iter().all(|&b| b != 0),
@@ -588,10 +588,11 @@ impl Connection {
             if buffer.len() > MAX_PAYLOAD {
                 return Err(Error::TooLongData);
             }
-            if !online.packet.can_fit_chunk(buffer, vital) {
-                result = online.flush(cb, &mut self.builder).map_err(Error::from);
-            } else {
+            #[allow(clippy::if_not_else)]
+            if online.packet.can_fit_chunk(buffer, vital) {
                 result = Ok(());
+            } else {
+                result = online.flush(cb, &mut self.builder).map_err(Error::from);
             }
         }
         self.queue(cb, buffer, vital);
@@ -632,17 +633,19 @@ impl Connection {
                     type_: ConnectedPacketType::Control(control),
                 }),
             )
-            .map_err(|e| e.unwrap_callback())
+            .map_err(|e| {
+                #[allow(clippy::unwrap_used)]
+                e.unwrap_callback()
+            })
     }
     pub fn tick<CB: Callback>(&mut self, cb: &mut CB) -> Result<(), CB::Error> {
-        let do_resend = match self.state {
+            let do_resend = match self.state {
             State::Online(ref online) => {
                 // WARN?
                 online
                     .resend_queue
                     .back()
-                    .map(|c| c.next_send.has_triggered_level(cb))
-                    .unwrap_or(false)
+                    .map_or(false, |c| c.next_send.has_triggered_level(cb))
             }
             _ => false,
         };
@@ -705,7 +708,7 @@ impl Connection {
             use protocol::ConnectedPacketType::*;
             use protocol::ControlPacket::*;
 
-            let token_hint = self.state.token().map(|t| t.is_some());
+            let token_hint = self.state.token().map(Option::is_some);
             let packet = match Packet::read(&mut w(warn), data, token_hint, &mut buffer) {
                 Ok(p) => p,
                 Err(e) => {
@@ -802,6 +805,11 @@ impl Connection {
 
 #[cfg(test)]
 mod test {
+    #![allow(
+        clippy::println_empty_string,
+        clippy::unwrap_used,
+        clippy::op_ref,
+    )]
     use super::Callback;
     use super::Connection;
     use super::ReceiveChunk;

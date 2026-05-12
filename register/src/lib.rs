@@ -1,4 +1,36 @@
 #![cfg(not(test))]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::doc_markdown,
+    clippy::enum_glob_use,
+    clippy::expect_used,
+    clippy::incompatible_msrv,
+    clippy::ip_constant,
+    clippy::large_enum_variant,
+    clippy::let_underscore_future,
+    clippy::manual_flatten,
+    clippy::map_unwrap_or,
+    clippy::match_result_ok,
+    clippy::match_same_arms,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::module_name_repetitions,
+    clippy::must_use_candidate,
+    clippy::needless_pass_by_value,
+    clippy::ptr_as_ptr,
+    clippy::redundant_closure,
+    clippy::return_self_not_must_use,
+    clippy::semicolon_if_nothing_returned,
+    clippy::similar_names,
+    clippy::single_char_pattern,
+    clippy::single_match_else,
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::type_complexity,
+    clippy::unwrap_used,
+    clippy::used_underscore_binding,
+)]
 
 #[macro_use]
 extern crate log;

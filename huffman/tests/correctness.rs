@@ -1,3 +1,9 @@
+#![allow(
+    clippy::legacy_numeric_constants,
+    clippy::unwrap_used,
+    clippy::from_str_radix_10,
+)]
+
 use itertools::Itertools;
 use libtw2_huffman::Huffman;
 use std::fs::File;

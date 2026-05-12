@@ -1,3 +1,24 @@
+#![allow(
+    clippy::cast_lossless,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::collapsible_else_if,
+    clippy::comparison_chain,
+    clippy::default_trait_access,
+    clippy::derivable_impls,
+    clippy::iter_not_returning_iterator,
+    clippy::map_unwrap_or,
+    clippy::match_same_arms,
+    clippy::must_use_candidate,
+    clippy::needless_late_init,
+    clippy::nonminimal_bool,
+    clippy::range_plus_one,
+    clippy::redundant_field_names,
+    clippy::return_self_not_must_use,
+    clippy::too_many_lines,
+)]
+
 use libtw2_common::num::Cast;
 use libtw2_common::num::CastFloat;
 use libtw2_gamenet::msg::game::SvTuneParams;

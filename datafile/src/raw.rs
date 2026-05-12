@@ -22,8 +22,8 @@ pub enum Version {
 }
 
 impl Version {
-    fn has_compressed_data(&self) -> bool {
-        match *self {
+    fn has_compressed_data(self) -> bool {
+        match self {
             Version::V3 => false,
             Version::V4Crude | Version::V4 => true,
         }
@@ -33,13 +33,18 @@ impl Version {
 pub struct CallbackError;
 
 pub trait CallbackNew {
+    #[allow(clippy::missing_errors_doc)]
     fn read(&mut self, buffer: &mut [u8]) -> Result<usize, CallbackError>;
+    #[allow(clippy::missing_errors_doc)]
     fn set_seek_base(&mut self) -> Result<(), CallbackError>;
+    #[allow(clippy::missing_errors_doc)]
     fn ensure_filesize(&mut self, filesize: u32) -> Result<Result<(), ()>, CallbackError>;
 }
 
 pub trait CallbackReadData {
+    #[allow(clippy::missing_errors_doc)]
     fn seek_read(&mut self, start: u32, buffer: &mut [u8]) -> Result<usize, CallbackError>;
+    #[allow(clippy::missing_errors_doc)]
     fn alloc_data_buffer(&mut self, length: usize) -> Result<(), CallbackError>;
     fn data_buffer(&mut self) -> &mut [u8];
 }
@@ -74,6 +79,7 @@ impl From<CallbackError> for CallbackReadError {
 }
 
 impl CallbackReadError {
+    #[must_use]
     pub fn on_eof(self, df_err: format::Error) -> Error {
         match self {
             CallbackReadError::Callback => Error::Callback,
@@ -93,6 +99,7 @@ pub struct Reader {
 }
 
 impl Reader {
+    #[allow(clippy::missing_errors_doc, clippy::cast_sign_loss)]
     pub fn new(cb: &mut dyn CallbackNew) -> Result<Reader, Error> {
         fn read_i32s<T: OnlyI32>(
             mut cb: &mut dyn CallbackNew,
@@ -107,10 +114,10 @@ impl Reader {
         let version = match header.hv.version {
             3 => Version::V3,
             4 => {
-                if !header_check.crude_version {
-                    Version::V4
-                } else {
+                if header_check.crude_version {
                     Version::V4Crude
+                } else {
+                    Version::V4
                 }
             }
             _ => unreachable!(), // Should have been caught earlier, in Header::read().
@@ -118,10 +125,10 @@ impl Reader {
         let item_types_raw = read_i32s(cb, header.hr.num_item_types as usize)?;
         let item_offsets = read_i32s(cb, header.hr.num_items as usize)?;
         let data_offsets = read_i32s(cb, header.hr.num_data as usize)?;
-        let uncomp_data_sizes = if !version.has_compressed_data() {
-            None
-        } else {
+        let uncomp_data_sizes = if version.has_compressed_data() {
             Some(read_i32s(cb, header.hr.num_data as usize)?)
+        } else {
+            None
         };
 
         // Possible failure of relative_size_of_mult should have been caught in Header::read().
@@ -142,17 +149,23 @@ impl Reader {
             })?;
 
         let result = Reader {
-            header: header,
+            header,
             item_types: item_types_raw,
-            item_offsets: item_offsets,
-            data_offsets: data_offsets,
-            uncomp_data_sizes: uncomp_data_sizes,
-            items_raw: items_raw,
-            version: version,
+            item_offsets,
+            data_offsets,
+            uncomp_data_sizes,
+            items_raw,
+            version,
         };
         result.check()?;
         Ok(result)
     }
+    #[allow(
+        clippy::missing_errors_doc,
+        clippy::too_many_lines,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
     pub fn check(&self) -> Result<(), format::Error> {
         {
             let mut expected_start = 0;
@@ -163,7 +176,7 @@ impl Reader {
                     return Err(format::Error::Malformed);
                 }
                 if let Some((previous_index, previous_type_id)) = previous {
-                    if !(t.type_id > previous_type_id) {
+                    if t.type_id <= previous_type_id {
                         error!("item_type type_id: must be larger than previous type_id, item_type1={} type_id1={} item_type2={} type_id2={}", previous_index, previous_type_id, i, t.type_id);
                         return Err(format::Error::Malformed);
                     }
@@ -293,6 +306,7 @@ impl Reader {
         // are POD.
         &(unsafe { transmute_slice::<i32, format::ItemHeader>(slice) })[0]
     }
+    #[allow(clippy::cast_sign_loss)]
     fn data_size_file(&self, index: usize) -> usize {
         let start = self.data_offsets[index] as usize;
         let end = if index < self.data_offsets.len() - 1 {
@@ -303,12 +317,14 @@ impl Reader {
         assert!(start <= end);
         end - start
     }
+    #[must_use]
     pub fn version(&self) -> Version {
         self.version
     }
-    pub fn read_data<'a>(
+    #[allow(clippy::missing_errors_doc, clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+    pub fn read_data(
         &self,
-        mut cb: &'a mut dyn CallbackReadData,
+        mut cb: &mut dyn CallbackReadData,
         index: usize,
     ) -> Result<(), Error> {
         let raw_data_len = self.data_size_file(index);
@@ -339,10 +355,11 @@ impl Reader {
             let data_len = raw_data_len;
             cb.alloc_data_buffer(data_len)?;
             let data = cb.data_buffer();
-            data.iter_mut().set_from(raw_data.iter().cloned());
+            data.iter_mut().set_from(raw_data.iter().copied());
             Ok(())
         }
     }
+    #[must_use]
     pub fn item(&self, index: usize) -> ItemView<'_> {
         let item_header = self.item_header(index);
         let data = &self.items_raw
@@ -352,15 +369,19 @@ impl Reader {
         ItemView {
             type_id: item_header.type_id(),
             id: item_header.id(),
-            data: data,
+            data,
         }
     }
+    #[must_use]
     pub fn num_items(&self) -> usize {
         self.header.hr.num_items.assert_usize()
     }
+    #[must_use]
     pub fn num_data(&self) -> usize {
         self.header.hr.num_data.assert_usize()
     }
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub fn item_type_indices(&self, type_id: u16) -> ops::Range<usize> {
         for t in &self.item_types {
             if t.type_id as u16 == type_id {
@@ -372,17 +393,21 @@ impl Reader {
         }
         0..0
     }
+    #[must_use]
     pub fn item_type(&self, index: usize) -> u16 {
         self.item_types[index].type_id.assert_u16()
     }
+    #[must_use]
     pub fn num_item_types(&self) -> usize {
         self.header.hr.num_item_types.assert_usize()
     }
 
+    #[must_use]
     pub fn find_item(&self, type_id: u16, item_id: u16) -> Option<ItemView<'_>> {
         self.item_type_items(type_id).find(|item| item.id == item_id)
     }
 
+    #[allow(clippy::missing_errors_doc, clippy::cast_sign_loss, clippy::cast_possible_truncation)]
     pub fn debug_dump(&self, cb: &mut dyn CallbackReadData) -> Result<(), Error> {
         if !log_enabled!(log::LogLevel::Debug) {
             return Ok(());
@@ -413,7 +438,7 @@ impl Reader {
                         sanitize_byte(bytes[1]),
                         sanitize_byte(bytes[2]),
                         sanitize_byte(bytes[3]),
-                    )
+                    );
                 }
             }
         }
@@ -432,18 +457,20 @@ impl Reader {
     }
 
     pub fn items(&self) -> Items<'_> {
+        #[allow(clippy::needless_lifetimes)]
         fn map_fn<'a>(i: usize, self_: &mut &'a Reader) -> ItemView<'a> {
             self_.item(i)
         }
         MapIterator::new(self, 0..self.num_items(), map_fn)
     }
     pub fn item_types(&self) -> ItemTypes<'_> {
-        fn map_fn<'a>(i: usize, self_: &mut &'a Reader) -> u16 {
+        fn map_fn(i: usize, self_: &mut &Reader) -> u16 {
             self_.item_type(i)
         }
         MapIterator::new(self, 0..self.num_item_types(), map_fn)
     }
     pub fn item_type_items(&self, type_id: u16) -> ItemTypeItems<'_> {
+        #[allow(clippy::needless_lifetimes)]
         fn map_fn<'a>(i: usize, self_: &mut &'a Reader) -> ItemView<'a> {
             self_.item(i)
         }

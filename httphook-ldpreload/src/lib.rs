@@ -1,4 +1,5 @@
 #![cfg(all(unix, not(target_os = "macos")))]
+#![allow(clippy::missing_errors_doc, clippy::missing_panics_doc, clippy::must_use_candidate, clippy::cast_sign_loss, clippy::cast_possible_truncation, clippy::used_underscore_binding, clippy::ptr_as_ptr, clippy::unwrap_used, clippy::len_zero)]
 
 #[macro_use]
 extern crate log;
@@ -69,7 +70,7 @@ unsafe fn from_sockaddr(addr: *const libc::sockaddr, addrlen: u32) -> Option<Soc
 }
 
 thread_local! {
-    pub static LAST_UDP_SOCKET: Cell<i32> = Cell::new(-1);
+    pub static LAST_UDP_SOCKET: Cell<i32> = const { Cell::new(-1) };
 }
 
 redhook::hook! {

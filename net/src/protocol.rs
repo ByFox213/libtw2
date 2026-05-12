@@ -58,6 +58,7 @@ pub const PACKET_FLAGS_BITS: u32 = 4;
 pub const SEQUENCE_BITS: u32 = 10;
 pub const SEQUENCE_MODULUS: u16 = 1 << SEQUENCE_BITS;
 
+#[must_use]
 pub fn chunk_header_size(vital: bool) -> usize {
     if vital {
         CHUNK_HEADER_SIZE_VITAL
@@ -212,7 +213,7 @@ impl<'a> ChunksIter<'a> {
     where
         W: Warn<Warning>,
     {
-        if self.data.len() == 0 {
+        if self.data.is_empty() {
             if !self.checked_num_chunks_warning {
                 self.checked_num_chunks_warning = true;
                 if self.num_remaining_chunks != 0 {
@@ -418,11 +419,12 @@ impl<'a> Packet<'a> {
     {
         Packet::read_impl(warn, bytes, token_hint, None)
     }
-    fn read_impl<'d, 's, W>(
+    #[allow(clippy::enum_glob_use)]
+    fn read_impl<'d, W>(
         warn: &mut W,
         bytes: &'d [u8],
         token_hint: Option<bool>,
-        buffer: Option<BufferRef<'d, 's>>,
+        buffer: Option<BufferRef<'d, '_>>,
     ) -> Result<Packet<'d>, PacketReadError>
     where
         W: Warn<Warning>,
@@ -431,8 +433,7 @@ impl<'a> Packet<'a> {
 
         assert!(buffer
             .as_ref()
-            .map(|b| b.remaining() >= MAX_PACKETSIZE)
-            .unwrap_or(true));
+            .map_or(true, |b| b.remaining() >= MAX_PACKETSIZE));
         if bytes.len() > MAX_PACKETSIZE {
             return Err(TooLong);
         }
@@ -451,10 +452,15 @@ impl<'a> Packet<'a> {
         }
 
         let payload = if header.flags & PACKETFLAG_COMPRESSION != 0 {
-            let mut buffer =
-                buffer.expect("read_panic_on_decompression called on compressed packet");
+            let mut buffer = {
+                #[allow(clippy::expect_used)]
+                buffer.expect("read_panic_on_decompression called on compressed packet")
+            };
             let decompressed = Packet::decompress(bytes, &mut buffer).map_err(|_| Compression)?;
-            let (_, payload) = PacketHeaderPacked::ref_and_rest_from(decompressed).unwrap();
+            let (_, payload) = {
+                #[allow(clippy::unwrap_used)]
+                PacketHeaderPacked::ref_and_rest_from(decompressed).unwrap()
+            };
             payload
         } else {
             payload
@@ -494,29 +500,24 @@ impl<'a> Packet<'a> {
             }
 
             let (&control, payload) = unwrap_or_return!(payload.split_first(), Err(ControlMissing));
-            // check for excess data
             match control {
                 CTRLMSG_CONNECT | CTRLMSG_CONNECTACCEPT => {
-                    if token.is_some() {
-                        if !payload.starts_with(CTRLMSG_TOKEN_MAGIC) {
-                            warn.warn(Warning::ControlConnectMissingTokenMagic);
-                            if !payload.is_empty() {
-                                warn.warn(Warning::ControlExcessData);
-                            }
-                        } else {
-                            if payload.len() > CTRLMSG_TOKEN_MAGIC.len() {
-                                warn.warn(Warning::ControlExcessData);
-                            }
+                    if token.is_some() && payload.starts_with(CTRLMSG_TOKEN_MAGIC) {
+                        if payload.len() > CTRLMSG_TOKEN_MAGIC.len() {
+                            warn.warn(Warning::ControlExcessData);
                         }
-                    } else {
+                    } else if token.is_some() {
+                        warn.warn(Warning::ControlConnectMissingTokenMagic);
                         if !payload.is_empty() {
                             warn.warn(Warning::ControlExcessData);
                         }
+                    } else if !payload.is_empty() {
+                        warn.warn(Warning::ControlExcessData);
                     }
                 }
                 CTRLMSG_CLOSE => {} // handled later
                 _ => {
-                    if payload.len() != 0 {
+                    if !payload.is_empty() {
                         warn.warn(Warning::ControlExcessData);
                     }
                 }
@@ -532,7 +533,7 @@ impl<'a> Packet<'a> {
                         .position(|&b| b == 0)
                         .unwrap_or(payload.len());
                     let nul = cmp::min(nul, CTRLMSG_CLOSE_REASON_LENGTH);
-                    if payload.len() != 0 && nul + 1 != payload.len() {
+                    if !payload.is_empty() && nul + 1 != payload.len() {
                         if nul + 1 < payload.len() {
                             warn.warn(Warning::ControlExcessData);
                         } else {
@@ -569,9 +570,9 @@ impl<'a> Packet<'a> {
     ) -> Result<bool, libtw2_huffman::DecompressionError> {
         with_buffer(buffer, |b| Packet::decompress_if_needed_impl(packet, b))
     }
-    fn decompress_if_needed_impl<'d, 's>(
+    fn decompress_if_needed_impl<'d>(
         packet: &[u8],
-        mut buffer: BufferRef<'d, 's>,
+        mut buffer: BufferRef<'d, '_>,
     ) -> Result<bool, libtw2_huffman::DecompressionError> {
         assert!(buffer.remaining() >= MAX_PACKETSIZE);
         if !Packet::needs_decompression(packet) {
@@ -587,12 +588,13 @@ impl<'a> Packet<'a> {
     ) -> Result<&'a [u8], libtw2_huffman::DecompressionError> {
         with_buffer(buffer, |b| Packet::decompress_impl(packet, b))
     }
-    fn decompress_impl<'d, 's>(
+    fn decompress_impl<'d>(
         packet: &[u8],
-        mut buffer: BufferRef<'d, 's>,
+        mut buffer: BufferRef<'d, '_>,
     ) -> Result<&'d [u8], libtw2_huffman::DecompressionError> {
         assert!(buffer.remaining() >= MAX_PACKETSIZE);
         assert!(Packet::needs_decompression(packet));
+        #[allow(clippy::expect_used)]
         let (header, payload) = PacketHeaderPacked::ref_and_rest_from(packet)
             .expect("packet passed to decompress too short for header");
         let header = header.unpack_warn(&mut Ignore);
@@ -604,6 +606,7 @@ impl<'a> Packet<'a> {
             ack: header.ack,
             num_chunks: header.num_chunks,
         };
+        #[allow(clippy::unwrap_used)]
         buffer.write(fake_header.pack().as_bytes()).unwrap();
         HUFFMAN.decompress(payload, &mut buffer)?;
 
@@ -613,22 +616,24 @@ impl<'a> Packet<'a> {
     pub fn write<'b, B: Buffer<'b>>(&self, buffer: B) -> Result<&'b [u8], Error> {
         match *self {
             Packet::Connected(ref p) => with_buffer(buffer, |b| p.write_impl(b)),
-            Packet::Connless(ref d) => write_connless_packet(d, buffer),
+            Packet::Connless(d) => write_connless_packet(d, buffer),
         }
     }
 }
 
-impl<'a> ConnectedPacket<'a> {
+impl ConnectedPacket<'_> {
     pub fn write<'b, B: Buffer<'b>>(&self, buffer: B) -> Result<&'b [u8], Error> {
         with_buffer(buffer, |b| self.write_impl(b))
     }
 
-    fn write_impl<'d, 's>(&self, mut buffer: BufferRef<'d, 's>) -> Result<&'d [u8], Error> {
+    fn write_impl<'d>(&self, mut buffer: BufferRef<'d, '_>) -> Result<&'d [u8], Error> {
         match self.type_ {
             ConnectedPacketType::Chunks(request_resend, num_chunks, payload) => {
                 let mut token_buffer: ArrayVec<[u8; 2048]> = ArrayVec::new();
                 let payload: &[u8] = if let Some(token) = self.token {
+                    #[allow(clippy::unwrap_used, clippy::unused_io_amount)]
                     token_buffer.write(payload).unwrap();
+                    #[allow(clippy::unwrap_used, clippy::unused_io_amount)]
                     token_buffer.write(&token.0).unwrap();
                     &token_buffer
                 } else {
@@ -638,8 +643,7 @@ impl<'a> ConnectedPacket<'a> {
                 let mut compression = 0;
                 let comp_result = HUFFMAN.compress(payload, &mut compression_buffer);
                 if comp_result
-                    .map(|s| s.len() < payload.len())
-                    .unwrap_or(false)
+                    .map_or(false, |s| s.len() < payload.len())
                 {
                     compression = PACKETFLAG_COMPRESSION;
                 }
@@ -669,12 +673,12 @@ impl<'a> ConnectedPacket<'a> {
     }
 }
 
-impl<'a> ControlPacket<'a> {
-    fn write<'d, 's>(
+impl ControlPacket<'_> {
+    fn write<'d>(
         &self,
         token: Option<Token>,
         ack: u16,
-        mut buffer: BufferRef<'d, 's>,
+        mut buffer: BufferRef<'d, '_>,
     ) -> Result<&'d [u8], Error> {
         buffer.write(
             PacketHeader {
@@ -697,6 +701,7 @@ impl<'a> ControlPacket<'a> {
         {
             buffer.write(CTRLMSG_TOKEN_MAGIC)?;
         }
+        #[allow(clippy::single_match)]
         match *self {
             ControlPacket::Close(m) => {
                 assert!(m.iter().all(|&b| b != 0));
@@ -752,6 +757,7 @@ impl PacketHeaderPacked {
 }
 
 impl PacketHeader {
+    #[must_use]
     pub fn pack(self) -> PacketHeaderPacked {
         let PacketHeader {
             flags,
@@ -840,6 +846,7 @@ impl ChunkHeaderPacked {
 }
 
 impl ChunkHeader {
+    #[must_use]
     pub fn pack(self) -> ChunkHeaderPacked {
         let ChunkHeader { flags, size } = self;
         // Check that the fields do not exceed their maximal size.
@@ -878,6 +885,7 @@ impl ChunkHeaderVitalPacked {
 }
 
 impl ChunkHeaderVital {
+    #[must_use]
     pub fn pack(self) -> ChunkHeaderVitalPacked {
         let ChunkHeaderVital { h, sequence } = self;
         assert!(sequence >> SEQUENCE_BITS == 0);
@@ -903,6 +911,12 @@ boilerplate_packed!(
 
 #[cfg(test)]
 mod test {
+    #![allow(
+        clippy::unwrap_used,
+        clippy::op_ref,
+        clippy::redundant_pattern_matching,
+        clippy::needless_pass_by_value,
+    )]
     use super::ChunkHeader;
     use super::ChunkHeaderPacked;
     use super::ChunkHeaderVital;

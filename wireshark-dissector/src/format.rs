@@ -106,7 +106,7 @@ mod test {
         assert_fmt(Bitfield::new(&[0], 0), ".... ....");
         assert_fmt(Bitfield::new(&[0], 0b1100_1100), "00.. 00..");
         assert_fmt(
-            Bitfield::new(&[0b10101010; 2], 0b0011_0011_1010_1010),
+            Bitfield::new(&[0b1010_1010; 2], 0b0011_0011_1010_1010),
             "..10 ..10 1.1. 1.1.",
         );
     }

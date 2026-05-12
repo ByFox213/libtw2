@@ -81,7 +81,7 @@ impl Reader {
         };
         let mut callback_data_new = CallbackDataNew {
             file: BufReader::new(file),
-            datafile_start: datafile_start,
+            datafile_start,
             cur_datafile_offset: 0,
             seek_base: None,
             error: None,
@@ -102,23 +102,28 @@ impl Reader {
             raw,
         })
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn new(file: File) -> Result<Reader, Error> {
         Reader::new_impl(file, true)
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Reader, Error> {
         fn inner(path: &Path) -> Result<Reader, Error> {
             Reader::new_impl(File::open(path)?, false)
         }
         inner(path.as_ref())
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn debug_dump(&mut self) -> Result<(), Error> {
         self.raw
             .debug_dump(&mut self.callback_data)
             .retrieve(&mut self.callback_data.error)
     }
+    #[must_use]
     pub fn version(&self) -> raw::Version {
         self.raw.version()
     }
+    #[allow(clippy::missing_errors_doc)]
     pub fn read_data(&mut self, index: usize) -> Result<Vec<u8>, Error> {
         self.raw
             .read_data(&mut self.callback_data, index)
@@ -129,38 +134,49 @@ impl Reader {
             .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "missing data buffer"))
             .map_err(Error::Io)
     }
+    #[must_use]
     pub fn item(&self, index: usize) -> ItemView<'_> {
         self.raw.item(index)
     }
+    #[must_use]
     pub fn num_items(&self) -> usize {
         self.raw.num_items()
     }
+    #[must_use]
     pub fn num_data(&self) -> usize {
         self.raw.num_data()
     }
+    #[must_use]
     pub fn item_type_indices(&self, type_id: u16) -> ops::Range<usize> {
         self.raw.item_type_indices(type_id)
     }
+    #[must_use]
     pub fn item_type(&self, index: usize) -> u16 {
         self.raw.item_type(index)
     }
+    #[must_use]
     pub fn num_item_types(&self) -> usize {
         self.raw.num_item_types()
     }
 
+    #[must_use]
     pub fn find_item(&self, type_id: u16, item_id: u16) -> Option<ItemView<'_>> {
         self.raw.find_item(type_id, item_id)
     }
 
+    #[must_use]
     pub fn items(&self) -> raw::Items<'_> {
         self.raw.items()
     }
+    #[must_use]
     pub fn item_types(&self) -> raw::ItemTypes<'_> {
         self.raw.item_types()
     }
+    #[must_use]
     pub fn item_type_items(&self, type_id: u16) -> raw::ItemTypeItems<'_> {
         self.raw.item_type_items(type_id)
     }
+    #[allow(clippy::mut_mut)]
     pub fn data_iter(&mut self) -> DataIter<'_> {
         fn map_fn(i: usize, self_: &mut &mut Reader) -> Result<Vec<u8>, Error> {
             self_.read_data(i)

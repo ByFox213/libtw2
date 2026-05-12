@@ -1,4 +1,11 @@
 #![cfg(not(test))]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::missing_panics_doc,
+    clippy::enum_glob_use,
+    clippy::items_after_statements
+)]
 
 #[macro_use]
 extern crate log;
@@ -63,9 +70,10 @@ pub fn register_server_6(port: u16) {
         let mut logger = env_logger::LogBuilder::new();
         logger.filter(None, log::LogLevelFilter::Info);
         if let Some(filters) = &config().log {
-            logger.parse(&filters);
+            logger.parse(filters);
         }
         logger.format(|record| {
+            #[allow(clippy::enum_glob_use)]
             use log::LogLevel::*;
             let level = match record.level() {
                 Error => 'E',
@@ -124,9 +132,8 @@ async fn request_server_info_6(
             Some(Response::Info6(info)) => {
                 if let Some(info) = info.parse() {
                     return info;
-                } else {
-                    error!("received bad info6 response from peer");
                 }
+                error!("received bad info6 response from peer");
                 continue;
             }
             Some(Response::Info6Ex(new_partial)) => {
@@ -180,7 +187,7 @@ fn build_register(port: u16, info: Arc<str>) -> Register {
     if let Some(protocols) = config.protocols {
         builder = builder.protocols(protocols);
     }
-    builder.build(port, info.into())
+    builder.build(port, info)
 }
 
 fn apply_overrides(mut info: json::Server) -> json::Server {
@@ -192,10 +199,10 @@ fn apply_overrides(mut info: json::Server) -> json::Server {
 
 async fn register_server_6_impl(port: u16, register: Arc<OnceLock<Register>>) {
     let socket = UdpSocket::bind("0.0.0.0:0").await.unwrap();
-    const LOCALHOST: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+    const LOCALHOST: IpAddr = IpAddr::V4(Ipv4Addr::LOCALHOST);
     let addr = SocketAddr::new(LOCALHOST, port);
 
-    let mut interval = time::interval(Duration::from_millis(1_000));
+    let mut interval = time::interval(Duration::from_secs(1));
     interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
 
     loop {

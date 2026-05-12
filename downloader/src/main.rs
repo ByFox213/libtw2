@@ -1,3 +1,31 @@
+#![allow(
+    clippy::cast_sign_loss,
+    clippy::collapsible_else_if,
+    clippy::collapsible_match,
+    clippy::derivable_impls,
+    clippy::elidable_lifetime_names,
+    clippy::explicit_iter_loop,
+    clippy::extra_unused_lifetimes,
+    clippy::iter_overeager_cloned,
+    clippy::legacy_numeric_constants,
+    clippy::match_same_arms,
+    clippy::needless_borrow,
+    clippy::needless_late_init,
+    clippy::needless_return,
+    clippy::nonminimal_bool,
+    clippy::redundant_closure_for_method_calls,
+    clippy::redundant_field_names,
+    clippy::redundant_pattern_matching,
+    clippy::semicolon_if_nothing_returned,
+    clippy::single_match,
+    clippy::too_many_lines,
+    clippy::uninlined_format_args,
+    clippy::unnested_or_patterns,
+    clippy::unreadable_literal,
+    clippy::unwrap_used,
+    clippy::useless_conversion,
+)]
+
 #[macro_use]
 extern crate log;
 

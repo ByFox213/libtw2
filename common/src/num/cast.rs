@@ -75,15 +75,15 @@ pub trait NIsize { }
 pub trait NUsize { }
 
 impl Cast for i8 {
-    #[inline] fn i8(self) -> i8 { self.try_into().ok().unwrap() }
+    #[inline] fn i8(self) -> i8 { self }
     #[inline] fn u8(self) -> u8 { unreachable!() }
-    #[inline] fn i16(self) -> i16 { self.try_into().ok().unwrap() }
+    #[inline] fn i16(self) -> i16 { self.into() }
     #[inline] fn u16(self) -> u16 { unreachable!() }
-    #[inline] fn i32(self) -> i32 { self.try_into().ok().unwrap() }
+    #[inline] fn i32(self) -> i32 { self.into() }
     #[inline] fn u32(self) -> u32 { unreachable!() }
-    #[inline] fn i64(self) -> i64 { self.try_into().ok().unwrap() }
+    #[inline] fn i64(self) -> i64 { self.into() }
     #[inline] fn u64(self) -> u64 { unreachable!() }
-    #[inline] fn isize(self) -> isize { self.try_into().ok().unwrap() }
+    #[inline] fn isize(self) -> isize { self.into() }
     #[inline] fn usize(self) -> usize { unreachable!() }
     #[inline] fn try_i8(self) -> Option<i8> { unreachable!() }
     #[inline] fn try_u8(self) -> Option<u8> { self.try_into().ok() }
@@ -109,15 +109,15 @@ impl Cast for i8 {
 
 impl Cast for u8 {
     #[inline] fn i8(self) -> i8 { unreachable!() }
-    #[inline] fn u8(self) -> u8 { self.try_into().ok().unwrap() }
-    #[inline] fn i16(self) -> i16 { self.try_into().ok().unwrap() }
-    #[inline] fn u16(self) -> u16 { self.try_into().ok().unwrap() }
-    #[inline] fn i32(self) -> i32 { self.try_into().ok().unwrap() }
-    #[inline] fn u32(self) -> u32 { self.try_into().ok().unwrap() }
-    #[inline] fn i64(self) -> i64 { self.try_into().ok().unwrap() }
-    #[inline] fn u64(self) -> u64 { self.try_into().ok().unwrap() }
-    #[inline] fn isize(self) -> isize { self.try_into().ok().unwrap() }
-    #[inline] fn usize(self) -> usize { self.try_into().ok().unwrap() }
+    #[inline] fn u8(self) -> u8 { self }
+    #[inline] fn i16(self) -> i16 { self.into() }
+    #[inline] fn u16(self) -> u16 { self.into() }
+    #[inline] fn i32(self) -> i32 { self.into() }
+    #[inline] fn u32(self) -> u32 { self.into() }
+    #[inline] fn i64(self) -> i64 { self.into() }
+    #[inline] fn u64(self) -> u64 { self.into() }
+    #[inline] fn isize(self) -> isize { self.into() }
+    #[inline] fn usize(self) -> usize { self.into() }
     #[inline] fn try_i8(self) -> Option<i8> { self.try_into().ok() }
     #[inline] fn try_u8(self) -> Option<u8> { unreachable!() }
     #[inline] fn try_i16(self) -> Option<i16> { unreachable!() }
@@ -143,13 +143,13 @@ impl Cast for u8 {
 impl Cast for i16 {
     #[inline] fn i8(self) -> i8 { unreachable!() }
     #[inline] fn u8(self) -> u8 { unreachable!() }
-    #[inline] fn i16(self) -> i16 { self.try_into().ok().unwrap() }
+    #[inline] fn i16(self) -> i16 { self }
     #[inline] fn u16(self) -> u16 { unreachable!() }
-    #[inline] fn i32(self) -> i32 { self.try_into().ok().unwrap() }
+    #[inline] fn i32(self) -> i32 { self.into() }
     #[inline] fn u32(self) -> u32 { unreachable!() }
-    #[inline] fn i64(self) -> i64 { self.try_into().ok().unwrap() }
+    #[inline] fn i64(self) -> i64 { self.into() }
     #[inline] fn u64(self) -> u64 { unreachable!() }
-    #[inline] fn isize(self) -> isize { self.try_into().ok().unwrap() }
+    #[inline] fn isize(self) -> isize { self.into() }
     #[inline] fn usize(self) -> usize { unreachable!() }
     #[inline] fn try_i8(self) -> Option<i8> { self.try_into().ok() }
     #[inline] fn try_u8(self) -> Option<u8> { self.try_into().ok() }
@@ -177,13 +177,13 @@ impl Cast for u16 {
     #[inline] fn i8(self) -> i8 { unreachable!() }
     #[inline] fn u8(self) -> u8 { unreachable!() }
     #[inline] fn i16(self) -> i16 { unreachable!() }
-    #[inline] fn u16(self) -> u16 { self.try_into().ok().unwrap() }
-    #[inline] fn i32(self) -> i32 { self.try_into().ok().unwrap() }
-    #[inline] fn u32(self) -> u32 { self.try_into().ok().unwrap() }
-    #[inline] fn i64(self) -> i64 { self.try_into().ok().unwrap() }
-    #[inline] fn u64(self) -> u64 { self.try_into().ok().unwrap() }
-    #[inline] fn isize(self) -> isize { self.try_into().ok().unwrap() }
-    #[inline] fn usize(self) -> usize { self.try_into().ok().unwrap() }
+    #[inline] fn u16(self) -> u16 { self }
+    #[inline] fn i32(self) -> i32 { self.into() }
+    #[inline] fn u32(self) -> u32 { self.into() }
+    #[inline] fn i64(self) -> i64 { self.into() }
+    #[inline] fn u64(self) -> u64 { self.into() }
+    #[inline] fn isize(self) -> isize { unwrap_overflow(self, self.try_into().ok()) }
+    #[inline] fn usize(self) -> usize { self.into() }
     #[inline] fn try_i8(self) -> Option<i8> { self.try_into().ok() }
     #[inline] fn try_u8(self) -> Option<u8> { self.try_into().ok() }
     #[inline] fn try_i16(self) -> Option<i16> { self.try_into().ok() }
@@ -211,11 +211,11 @@ impl Cast for i32 {
     #[inline] fn u8(self) -> u8 { unreachable!() }
     #[inline] fn i16(self) -> i16 { unreachable!() }
     #[inline] fn u16(self) -> u16 { unreachable!() }
-    #[inline] fn i32(self) -> i32 { self.try_into().ok().unwrap() }
+    #[inline] fn i32(self) -> i32 { self }
     #[inline] fn u32(self) -> u32 { unreachable!() }
-    #[inline] fn i64(self) -> i64 { self.try_into().ok().unwrap() }
+    #[inline] fn i64(self) -> i64 { self.into() }
     #[inline] fn u64(self) -> u64 { unreachable!() }
-    #[inline] fn isize(self) -> isize { self.try_into().ok().unwrap() }
+    #[inline] fn isize(self) -> isize { unwrap_overflow(self, self.try_into().ok()) }
     #[inline] fn usize(self) -> usize { unreachable!() }
     #[inline] fn try_i8(self) -> Option<i8> { self.try_into().ok() }
     #[inline] fn try_u8(self) -> Option<u8> { self.try_into().ok() }
@@ -245,11 +245,11 @@ impl Cast for u32 {
     #[inline] fn i16(self) -> i16 { unreachable!() }
     #[inline] fn u16(self) -> u16 { unreachable!() }
     #[inline] fn i32(self) -> i32 { unreachable!() }
-    #[inline] fn u32(self) -> u32 { self.try_into().ok().unwrap() }
-    #[inline] fn i64(self) -> i64 { self.try_into().ok().unwrap() }
-    #[inline] fn u64(self) -> u64 { self.try_into().ok().unwrap() }
+    #[inline] fn u32(self) -> u32 { self }
+    #[inline] fn i64(self) -> i64 { self.into() }
+    #[inline] fn u64(self) -> u64 { self.into() }
     #[inline] fn isize(self) -> isize { unreachable!() }
-    #[inline] fn usize(self) -> usize { self.try_into().ok().unwrap() }
+    #[inline] fn usize(self) -> usize { unwrap_overflow(self, self.try_into().ok()) }
     #[inline] fn try_i8(self) -> Option<i8> { self.try_into().ok() }
     #[inline] fn try_u8(self) -> Option<u8> { self.try_into().ok() }
     #[inline] fn try_i16(self) -> Option<i16> { self.try_into().ok() }
@@ -279,7 +279,7 @@ impl Cast for i64 {
     #[inline] fn u16(self) -> u16 { unreachable!() }
     #[inline] fn i32(self) -> i32 { unreachable!() }
     #[inline] fn u32(self) -> u32 { unreachable!() }
-    #[inline] fn i64(self) -> i64 { self.try_into().ok().unwrap() }
+    #[inline] fn i64(self) -> i64 { self }
     #[inline] fn u64(self) -> u64 { unreachable!() }
     #[inline] fn isize(self) -> isize { unreachable!() }
     #[inline] fn usize(self) -> usize { unreachable!() }
@@ -313,7 +313,7 @@ impl Cast for u64 {
     #[inline] fn i32(self) -> i32 { unreachable!() }
     #[inline] fn u32(self) -> u32 { unreachable!() }
     #[inline] fn i64(self) -> i64 { unreachable!() }
-    #[inline] fn u64(self) -> u64 { self.try_into().ok().unwrap() }
+    #[inline] fn u64(self) -> u64 { self }
     #[inline] fn isize(self) -> isize { unreachable!() }
     #[inline] fn usize(self) -> usize { unreachable!() }
     #[inline] fn try_i8(self) -> Option<i8> { self.try_into().ok() }
@@ -345,9 +345,9 @@ impl Cast for isize {
     #[inline] fn u16(self) -> u16 { unreachable!() }
     #[inline] fn i32(self) -> i32 { unreachable!() }
     #[inline] fn u32(self) -> u32 { unreachable!() }
-    #[inline] fn i64(self) -> i64 { self.try_into().ok().unwrap() }
+    #[inline] fn i64(self) -> i64 { unwrap_overflow(self, self.try_into().ok()) }
     #[inline] fn u64(self) -> u64 { unreachable!() }
-    #[inline] fn isize(self) -> isize { self.try_into().ok().unwrap() }
+    #[inline] fn isize(self) -> isize { self }
     #[inline] fn usize(self) -> usize { unreachable!() }
     #[inline] fn try_i8(self) -> Option<i8> { self.try_into().ok() }
     #[inline] fn try_u8(self) -> Option<u8> { self.try_into().ok() }
@@ -379,9 +379,9 @@ impl Cast for usize {
     #[inline] fn i32(self) -> i32 { unreachable!() }
     #[inline] fn u32(self) -> u32 { unreachable!() }
     #[inline] fn i64(self) -> i64 { unreachable!() }
-    #[inline] fn u64(self) -> u64 { self.try_into().ok().unwrap() }
+    #[inline] fn u64(self) -> u64 { unwrap_overflow(self, self.try_into().ok()) }
     #[inline] fn isize(self) -> isize { unreachable!() }
-    #[inline] fn usize(self) -> usize { self.try_into().ok().unwrap() }
+    #[inline] fn usize(self) -> usize { self }
     #[inline] fn try_i8(self) -> Option<i8> { self.try_into().ok() }
     #[inline] fn try_u8(self) -> Option<u8> { self.try_into().ok() }
     #[inline] fn try_i16(self) -> Option<i16> { self.try_into().ok() }

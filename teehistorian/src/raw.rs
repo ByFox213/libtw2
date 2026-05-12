@@ -106,7 +106,14 @@ pub struct Buffer {
     buffer: Vec<u8>,
 }
 
+impl Default for Buffer {
+    fn default() -> Buffer {
+        Buffer::new()
+    }
+}
+
 impl Buffer {
+    #[must_use]
     pub fn new() -> Buffer {
         Buffer {
             offset: 0,
@@ -154,7 +161,7 @@ pub struct Reader {
 impl Reader {
     fn empty(version: format::Version) -> Reader {
         Reader {
-            version: version,
+            version,
             tick: 0,
             players: VecMap::new(),
             inputs: VecMap::new(),
@@ -198,6 +205,7 @@ impl Reader {
             _ => return Err(format::Error::UnknownVersion),
         })
     }
+    #[allow(clippy::too_many_lines)]
     pub fn read<'a, CB>(
         &mut self,
         cb: &mut CB,
@@ -220,7 +228,7 @@ impl Reader {
         }
 
         if let Some(cid) = item_kind.player_cid() {
-            if self.prev_player_cid.map(|p| p >= cid).unwrap_or(false) {
+            if self.prev_player_cid.map_or(false, |p| p >= cid) {
                 let old_tick = self.tick;
                 self.tick = old_tick.checked_add(1).ok_or(format::Error::TickOverflow)?;
                 self.prev_player_cid = None;
@@ -296,7 +304,7 @@ impl Reader {
                 Item::PlayerChange(PlayerChange {
                     cid: i.cid,
                     pos: *player,
-                    old_pos: old_pos,
+                    old_pos,
                 })
             }
             format::Item::PlayerNew(i) => {
@@ -308,7 +316,7 @@ impl Reader {
                 }
                 Item::PlayerNew(Player {
                     cid: i.cid,
-                    pos: pos,
+                    pos,
                 })
             }
             format::Item::PlayerOld(i) => {
@@ -320,7 +328,7 @@ impl Reader {
                     .ok_or(format::Error::PlayerOldWithoutNew)?;
                 Item::PlayerOld(Player {
                     cid: i.cid,
-                    pos: pos,
+                    pos,
                 })
             }
             format::Item::InputDiff(i) => {
@@ -352,10 +360,10 @@ impl Reader {
         }))
     }
     pub fn player_pos(&self, cid: i32) -> Option<Pos> {
-        self.players.get(cid.assert_usize()).cloned()
+        self.players.get(cid.assert_usize()).copied()
     }
     pub fn input(&self, cid: i32) -> Option<[i32; INPUT_LEN]> {
-        self.inputs.get(cid.assert_usize()).cloned()
+        self.inputs.get(cid.assert_usize()).copied()
     }
     pub fn cids(&self) -> ops::Range<i32> {
         0..self.max_cid + 1
@@ -363,6 +371,7 @@ impl Reader {
 }
 
 impl Buffer {
+    #[allow(clippy::if_not_else)]
     fn read_more<CB: Callback>(&mut self, cb: &mut CB) -> Result<(), Error<CB::Error>> {
         if self.buffer.len() != self.buffer.capacity() {
             if cb.read_buffer(&mut self.buffer).wrap()?.is_some() {
@@ -456,6 +465,7 @@ pub struct Input {
 #[derive(Clone, Serialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
+#[allow(clippy::large_enum_variant)]
 pub enum Item<'a> {
     TickStart(i32),
     TickEnd(i32),
@@ -490,7 +500,7 @@ pub enum Item<'a> {
     UnknownEx(item::UnknownEx<'a>),
 }
 
-impl<'a> fmt::Debug for Item<'a> {
+impl fmt::Debug for Item<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Item::TickStart(ref i) => f.debug_tuple("TickStart").field(&i).finish(),

@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used)]
 use libtw2_huffman::Huffman;
 use std::fs::File;
 use std::io::BufRead;
@@ -12,9 +13,9 @@ fn read_file<T, F: FnMut(String) -> T>(filename: &str, f: F) -> Vec<T> {
 }
 
 fn main() {
-    let input = read_file("data/frequencies", |l| u32::from_str_radix(&l, 10).unwrap());
+    let input = read_file("data/frequencies", |l| l.parse::<u32>().unwrap());
 
     for r in Huffman::from_frequencies(&input).repr() {
-        println!("{}", r);
+        println!("{r}");
     }
 }

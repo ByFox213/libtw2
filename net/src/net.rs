@@ -128,7 +128,7 @@ impl<A: Address> Peers<A> {
         self.peers.remove(pid)
     }
     fn pid_from_addr(&mut self, addr: A) -> Option<PeerId> {
-        for (pid, p) in self.peers.iter() {
+        for (pid, p) in &self.peers {
             if p.addr == addr {
                 return Some(pid);
             }
@@ -562,6 +562,7 @@ pub struct Tick<'a, A: Address + 'a, CB: Callback<A> + 'a> {
 impl<'a, A: Address + 'a, CB: Callback<A> + 'a> Iterator for Tick<'a, A, CB> {
     type Item = CB::Error;
     fn next(&mut self) -> Option<CB::Error> {
+        #[allow(clippy::never_loop)]
         while let Some((_, p)) = self.iter_mut.next() {
             match p.conn.tick(&mut cc(self.cb, p.addr)) {
                 Ok(()) => {}
@@ -574,6 +575,10 @@ impl<'a, A: Address + 'a, CB: Callback<A> + 'a> Iterator for Tick<'a, A, CB> {
 
 #[cfg(test)]
 mod test {
+    #![allow(
+        clippy::unwrap_used,
+        clippy::op_ref,
+    )]
     use super::Callback;
     use super::ChunkOrEvent;
     use super::Net;

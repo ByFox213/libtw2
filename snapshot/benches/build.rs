@@ -1,4 +1,13 @@
-#![allow(unused_mut)]
+#![allow(
+    unused_mut,
+    clippy::needless_borrow,
+    clippy::explicit_auto_deref,
+    clippy::unwrap_used,
+    clippy::cast_lossless,
+    clippy::needless_pass_by_value,
+    clippy::expect_used,
+    clippy::used_underscore_items
+)]
 
 use self::traits::Delta as _;
 use self::traits::Implementation;

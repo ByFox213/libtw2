@@ -170,7 +170,7 @@ impl<'a, T> Iterator for Drain<'a, T> {
 impl<'a, T: 'a> Iterator for Keys<'a, T> {
     type Item = PeerId;
     fn next(&mut self) -> Option<PeerId> {
-        self.0.next().cloned()
+        self.0.next().copied()
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()

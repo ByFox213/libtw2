@@ -1,3 +1,10 @@
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::items_after_statements,
+    clippy::elidable_lifetime_names,
+)]
+
 #[macro_use]
 extern crate log;
 
@@ -50,7 +57,7 @@ fn hexdump(level: LogLevel, data: &[u8]) {
     }
 }
 
-fn dump(dir: Direction, addr: Addr, data: &[u8]) {
+fn dump(dir: &Direction, addr: Addr, data: &[u8]) {
     debug!("{} {}", dir, addr);
     hexdump(LogLevel::Debug, data);
 }
@@ -126,11 +133,10 @@ pub struct Socket {
 
 fn udp_socket(bindaddr: &SocketAddr) -> io::Result<Option<UdpSocket>> {
     debug!("binding to {}", bindaddr);
-    let builder;
-    match *bindaddr {
-        SocketAddr::V4(..) => builder = UdpBuilder::new_v4(),
-        SocketAddr::V6(..) => builder = UdpBuilder::new_v6(),
-    }
+    let builder = match *bindaddr {
+        SocketAddr::V4(..) => UdpBuilder::new_v4(),
+        SocketAddr::V6(..) => UdpBuilder::new_v6(),
+    };
     let builder = match builder {
         Err(ref e) if e.raw_os_error() == Some(libc::EAFNOSUPPORT) => return Ok(None), // Address family not supported.
         b => b?,
@@ -164,15 +170,15 @@ impl Socket {
     pub fn construct(port: Option<u16>, loss_rate: f32) -> io::Result<Socket> {
         assert!(port != Some(0));
         let port = port.unwrap_or(0);
-        assert!(0.0 <= loss_rate && loss_rate <= 1.0);
+        assert!((0.0..=1.0).contains(&loss_rate));
 
         fn register(poll: &mut mio::Poll, token: usize, socket: &UdpSocket) -> io::Result<()> {
             use mio::PollOpt;
             poll.register(socket, Token(token), Ready::readable(), PollOpt::level())
         }
 
-        let addr_v4 = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
-        let addr_v6 = IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0));
+        let addr_v4 = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
+        let addr_v6 = IpAddr::V6(Ipv6Addr::UNSPECIFIED);
 
         let v4 = udp_socket(&SocketAddr::new(addr_v4, port))?;
         let v6 = udp_socket(&SocketAddr::new(addr_v6, port))?;
@@ -186,21 +192,19 @@ impl Socket {
 
         let mut poll = mio::Poll::new()?;
         v4.as_ref()
-            .map(|v4| register(&mut poll, 4, &v4))
-            .unwrap_or(Ok(()))?;
+            .map_or(Ok(()), |v4| register(&mut poll, 4, v4))?;
         v6.as_ref()
-            .map(|v6| register(&mut poll, 6, &v6))
-            .unwrap_or(Ok(()))?;
+            .map_or(Ok(()), |v6| register(&mut poll, 6, v6))?;
         Ok(Socket {
             start: Instant::now(),
             time_cached: Timestamp::from_secs_since_epoch(0),
-            poll: poll,
+            poll,
             events: mio::Events::with_capacity(2),
-            v4: v4,
-            v6: v6,
+            v4,
+            v6,
             check_v4: false,
             check_v6: false,
-            loss_rate: loss_rate,
+            loss_rate,
         })
     }
     fn loss(&self) -> bool {
@@ -212,21 +216,21 @@ impl Socket {
     ) -> Option<Result<(Addr, &'a [u8]), io::Error>> {
         with_buffer(buf, |b| self.receive_impl(b))
     }
-    fn receive_impl<'d, 's>(
+    fn receive_impl<'d>(
         &mut self,
-        mut buf: BufferRef<'d, 's>,
+        mut buf: BufferRef<'d, '_>,
     ) -> Option<Result<(Addr, &'d [u8]), io::Error>> {
         let mut result = None;
         {
             let buf_slice = unsafe { buf.uninitialized_mut() };
             if result.is_none() && self.check_v6 {
-                if let Some(r) = non_block(self.v6.as_ref().unwrap().recv_from(buf_slice)) {
+                if let Some(r) = non_block(self.v6.as_ref().unwrap_or_else(|| unreachable!()).recv_from(buf_slice)) {
                     result = Some(r);
                     self.check_v6 = false;
                 }
             }
             if result.is_none() && self.check_v4 {
-                if let Some(r) = non_block(self.v4.as_ref().unwrap().recv_from(buf_slice)) {
+                if let Some(r) = non_block(self.v4.as_ref().unwrap_or_else(|| unreachable!()).recv_from(buf_slice)) {
                     result = Some(r);
                     self.check_v4 = false;
                 }
@@ -240,7 +244,7 @@ impl Socket {
             let addr = Addr::from(addr);
             buf.advance(len);
             let initialized = buf.initialized();
-            dump(Direction::Receive, addr, initialized);
+            dump(&Direction::Receive, addr, initialized);
             (addr, initialized)
         }))
     }
@@ -270,15 +274,15 @@ impl Socket {
 impl Callback<Addr> for Socket {
     type Error = io::Error;
     fn secure_random(&mut self, buffer: &mut [u8]) {
-        thread_rng().fill_bytes(buffer)
+        thread_rng().fill_bytes(buffer);
     }
     fn send(&mut self, addr: Addr, data: &[u8]) -> Result<(), io::Error> {
         if self.loss() {
             return Ok(());
         }
-        dump(Direction::Send, addr, data);
+        dump(&Direction::Send, addr, data);
         let sock_addr = SocketAddr::new(addr.ip, addr.port);
-        let maybe_socket = if let IpAddr::V4(..) = addr.ip {
+        let maybe_socket = if addr.ip.is_ipv4() {
             &self.v4
         } else {
             &self.v6
