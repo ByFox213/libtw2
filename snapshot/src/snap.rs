@@ -1275,6 +1275,7 @@ impl RawBuilderSorted {
     }
 }
 
+#[derive(Clone)]
 pub struct Builder {
     snap: Snap,
     next_type_id: u16,
@@ -1325,6 +1326,27 @@ impl Builder {
         }
         self.snap.raw.push_item(raw_type_id, id, data)
     }
+
+    pub fn register_uuid(&mut self, uuid: Uuid) {
+        match self.snap.extended_types.entry(uuid) {
+            hash_map::Entry::Occupied(_) => {}
+            hash_map::Entry::Vacant(v) => {
+                let raw_type_id = self.next_type_id;
+                assert!(OFFSET_EXTENDED_TYPE_ID <= raw_type_id, "invalid type ID");
+                assert!(raw_type_id < 0x8000, "invalid type ID");
+                let ex_key = key(TYPE_ID_EX, raw_type_id);
+                if self.snap.raw.seen.insert(ex_key) {
+                    self.snap
+                        .raw
+                        .push_item(TYPE_ID_EX, raw_type_id, &uuid_to_item_data(uuid))
+                        .expect("failed to add UUID item to snapshot");
+                    self.next_type_id += 1;
+                    v.insert(raw_type_id);
+                }
+            }
+        }
+    }
+
     pub fn finish(self) -> Snap {
         let mut snap = self.snap;
         snap.raw.sort_items();
