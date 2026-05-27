@@ -453,16 +453,15 @@ impl RawSnap {
                         updates_index += 1;
                     }
                     cmp::Ordering::Equal => {
-                        if delta.deleted_items.contains_key(from_key) {
+                        let in_data = if delta.deleted_items.contains_key(from_key) {
                             num_deletions += 1;
-                        }
+                            None
+                        } else {
+                            Some(from.item_from_entry(&from.items[index]))
+                        };
                         let diff =
                             &delta.buf[to_usize(delta.updated_items[updates_index].range.clone())];
-                        self.push_apply_key(
-                            from_key,
-                            Some(from.item_from_entry(&from.items[index])),
-                            diff,
-                        )?;
+                        self.push_apply_key(from_key, in_data, diff)?;
                         index += 1;
                         updates_index += 1;
                     }
@@ -967,12 +966,17 @@ impl Delta {
                         let from_data = from.item_from_entry(&from_items[index]);
                         let to_data = to.item_from_entry(&to_items[j]);
                         if from_data != to_data {
-                            let range = self.prepare_update_item(tk, to_data.len(), 0);
-                            let out_delta = &mut self.buf[to_usize(range.clone())];
-                            create_item_delta(Some(from_data), to_data, out_delta).expect(
-                                "item sizes can't be mismatched for self-created snapshots",
-                            );
-                            // but they can be different for snapshots received over the network…
+                            if from_data.len() == to_data.len() {
+                                let range = self.prepare_update_item(tk, to_data.len(), 0);
+                                let out_delta = &mut self.buf[to_usize(range.clone())];
+                                create_item_delta(Some(from_data), to_data, out_delta)
+                                    .expect("item sizes must match");
+                            } else {
+                                assert!(self.deleted_items.insert_key(fk));
+                                let range = self.prepare_update_item(tk, to_data.len(), 0);
+                                let out_delta = &mut self.buf[to_usize(range.clone())];
+                                out_delta.copy_from_slice(to_data);
+                            }
                         }
                         index += 1;
                         j += 1;
